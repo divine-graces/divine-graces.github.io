@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin — Divine Grace School Portal</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .admin-topbar{background:linear-gradient(135deg,var(--primary-dk) 0%,var(--primary) 100%);color:#fff;padding:18px 28px;border-radius:var(--r-lg);margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+    .admin-topbar h2{color:#fff;margin:0;font-size:1.3rem}
+    .admin-topbar p{opacity:.7;font-size:.82rem;margin:0}
+    .tab-nav{display:flex;gap:4px;background:var(--border);border-radius:var(--r-sm);padding:4px;margin-bottom:24px;flex-wrap:wrap}
+    .tab-btn{flex:1;min-width:110px;padding:9px 14px;border:none;border-radius:6px;font-family:var(--font-b);font-size:.86rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-muted);transition:all .2s}
+    .tab-btn.active{background:var(--surface);color:var(--primary);box-shadow:var(--shadow-sm)}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    .generated-box{background:#f0f7ff;border:1px solid #cce3ff;border-radius:var(--r-sm);padding:14px 18px;margin-top:10px;display:none}
+    .generated-box .id-display{font-size:1.5rem;font-family:var(--font-h);color:var(--primary);font-weight:700;letter-spacing:1px}
+    .generated-box .pin-display{font-size:1.2rem;font-weight:700;color:var(--accent);margin-top:4px;letter-spacing:2px}
+    .result-type-badge{display:inline-block;padding:4px 12px;border-radius:12px;font-size:.75rem;font-weight:700;margin-left:8px}
+    .badge-lower{background:#d4edda;color:#1a5c35}
+    .badge-upper{background:#d1ecf1;color:#0c5460}
+    .subject-score-section{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:16px;margin-bottom:16px}
+    .subject-score-section h4{margin-bottom:12px;font-size:.9rem}
+    .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .star-input-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border);gap:12px}
+    .star-input-row:last-child{border-bottom:none}
+    .star-input-row label{flex:1;font-size:.88rem;font-weight:500}
+    .star-btns{display:flex;gap:4px}
+    .star-btns button{width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:1.2rem;color:#ddd;padding:0;transition:color .15s}
+    .star-btns button.lit{color:var(--accent)}
+    .activity-entry{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:10px;align-items:center}
+    .activity-entry input{flex:1}
+
+    /* ══ TOGGLE SWITCH ══ */
+    .vis-toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;gap:10px}
+    .vis-toggle-row .cls-label{font-size:.85rem;font-weight:600;color:var(--text)}
+    .toggle-switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+    .toggle-switch input{opacity:0;width:0;height:0;position:absolute}
+    .toggle-track{position:absolute;inset:0;background:#ccc;border-radius:24px;cursor:pointer;transition:background .25s}
+    .toggle-track:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+    .toggle-switch input:checked + .toggle-track{background:var(--primary)}
+    .toggle-switch input:checked + .toggle-track:before{transform:translateX(20px)}
+    .vis-status{font-size:.72rem;font-weight:700;margin-top:2px}
+    .vis-status.on{color:var(--primary)}.vis-status.off{color:var(--danger)}
+
+    .result-mode-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+    .result-mode-nav .tab-btn{flex:1;min-width:140px;}
+
+    /* ══ CLASS CARDS (Students tab) ══ */
+    .class-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+    .class-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:20px 16px;text-align:center;cursor:pointer;transition:all .18s;box-shadow:var(--shadow-sm)}
+    .class-card:hover{border-color:var(--primary);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+    .class-card__name{font-size:1rem;font-weight:700;color:var(--primary);margin-bottom:4px}
+    .class-card__count{font-size:.78rem;color:var(--text-muted)}
+    .class-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;color:var(--primary);font-weight:600;font-size:.88rem;cursor:pointer;background:none;border:none;padding:0}
+    .class-back:hover{text-decoration:underline}
+
+    /* ══ ADMIN MOBILE ══ */
+    .admin-mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--primary);border-top:1px solid rgba(255,255,255,.15);padding:6px 0;z-index:200;box-shadow:0 -2px 10px rgba(0,0,0,.2)}
+    .admin-mobile-nav a{flex:1;display:flex;flex-direction:column;align-items:center;font-size:.65rem;color:rgba(255,255,255,.7);text-decoration:none;padding:5px 0;cursor:pointer;border:none;background:none;font-family:var(--font-b)}
+    .admin-mobile-nav a .icon{font-size:1.2rem;margin-bottom:1px}
+    .admin-mobile-nav a.active{color:#fff}
+    .admin-mobile-nav a.active .icon{filter:drop-shadow(0 0 3px rgba(200,150,62,.8))}
+    @media(max-width:768px){
+      .sidebar{display:none}
+      .admin-mobile-nav{display:flex}
+      .main-content{padding:14px;padding-bottom:75px}
+      .two-col{grid-template-columns:1fr}
+      .three-col{grid-template-columns:1fr 1fr}
+      .admin-topbar{border-radius:var(--r-sm);padding:14px 16px}
+      .admin-tab-nav{display:none}
+      .s-actions{flex-wrap:wrap}
+      .modal{margin:8px}
+      .modal-lg{max-width:100%}
+    }
+  </style>
+</head>
+<body>
+<!-- ══ SVG ICON SPRITE ══ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;" aria-hidden="true">
+  <symbol id="ic-home" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></symbol>
+  <symbol id="ic-chart" viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></symbol>
+  <symbol id="ic-book-open" viewBox="0 0 24 24"><path d="M2 3h7a4 4 0 014 4v14a3 3 0 00-3-3H2V3z"/><path d="M22 3h-7a4 4 0 00-4 4v14a3 3 0 013-3h8V3z"/></symbol>
+  <symbol id="ic-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></symbol>
+  <symbol id="ic-megaphone" viewBox="0 0 24 24"><path d="M18 8a4 4 0 010 8"/><path d="M21 5a7 7 0 010 14"/><path d="M3 9h4l7-5v16l-7-5H3a1 1 0 01-1-1v-4a1 1 0 011-1z"/><line x1="7" y1="9" x2="7" y2="15"/></symbol>
+  <symbol id="ic-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+  <symbol id="ic-notes" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></symbol>
+  <symbol id="ic-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></symbol>
+  <symbol id="ic-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></symbol>
+  <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="ic-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="ic-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></symbol>
+  <symbol id="ic-print" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+  <symbol id="ic-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="ic-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></symbol>
+  <symbol id="ic-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></symbol>
+  <symbol id="ic-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="ic-chevron-up" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+</svg>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar__logo">
+      <img src="logo.png" alt="Logo" onerror="this.style.display='none'"/>
+      <div class="name">Admin Panel</div>
+    </div>
+    <nav>
+      <a href="#" onclick="switchTab('students')" id="nav-students" class="active"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg></span> Students</a>
+      <a href="#" onclick="switchTab('results')" id="nav-results"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span> Results</a>
+      <a href="#" onclick="switchTab('subjects')" id="nav-subjects"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg></span> Subjects</a>
+      <a href="#" onclick="switchTab('scheme')" id="nav-scheme"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span> Scheme of Work</a>
+      <a href="#" onclick="switchTab('announcements')" id="nav-ann"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span> Announcements</a>
+      <a href="notes.html" id="nav-notes"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span> Lesson Notes</a>
+    </nav>
+    <div class="sidebar__footer">
+      <button class="btn btn-danger btn-full btn-sm" onclick="adminLogout()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-logout"/></svg> Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text">Loading...</div></div>
+
+    <div class="admin-topbar">
+      <div><h2><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg> Admin Dashboard</h2><p id="adminEmailLabel">Divine Grace School</p></div>
+      <div style="font-size:.8rem;opacity:.7;">Session: <strong id="sessionLabel"></strong></div>
+    </div>
+
+    <!-- ══ STUDENTS ══ -->
+    <div class="tab-panel active" id="tab-students">
+      <div class="page-title"><h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg> Students</h1><p>Select a class to manage its students</p></div>
+
+      <!-- Class grid view (default) -->
+      <div id="classGridView">
+        <div class="class-grid" id="classGrid">
+          <div style="padding:30px;text-align:center;color:var(--text-muted);">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Per-class student list view (shown after clicking a class card) -->
+      <div id="classStudentView" style="display:none;">
+        <button class="class-back" onclick="backToClassGrid()">
+          <svg class="icon-svg" aria-hidden="true"><use href="#ic-chevron-down" style="transform:rotate(90deg)"/></svg>
+          ← All Classes
+        </button>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+          <h2 id="classStudentTitle" style="margin:0;font-size:1.1rem;color:var(--primary);flex:1;"></h2>
+          <input class="form-control" id="searchStudents" placeholder="Search name or ID..." style="max-width:240px;" oninput="renderStudentList()"/>
+          <button class="btn btn-primary" onclick="openAddStudent()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-plus"/></svg> Add Student</button>
+        </div>
+        <div class="card" id="studentList">
+          <div style="padding:40px;text-align:center;color:var(--text-muted);">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SUBJECTS ══ -->
+    <div class="tab-panel" id="tab-subjects">
+      <div class="page-title">
+        <h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subjects</h1>
+        <p>Manage subjects per class. Changes apply instantly to Results, Scheme of Work, and Lesson Notes.</p>
+      </div>
+
+      <!-- Class selector -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-body">
+          <div class="form-group" style="max-width:280px;margin:0;">
+            <label class="form-label">Select Class</label>
+            <select class="form-control" id="subjectClass" onchange="loadSubjectsForClass()">
+              <option value="">— Select Class —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject manager card (hidden until class selected) -->
+      <div class="card" id="subjectManagerCard" style="display:none;">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <h3 id="subjectManagerTitle">Subjects</h3>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input class="form-control" id="newSubjectInput" placeholder="Subject name..." style="max-width:220px;"
+              onkeydown="if(event.key==='Enter') addSubject()"/>
+            <button class="btn btn-primary btn-sm" onclick="addSubject()">
+              <svg class="icon-svg" aria-hidden="true"><use href="#ic-plus"/></svg> Add
+            </button>
+          </div>
+        </div>
+        <div class="card-body" style="padding-top:8px;">
+          <div id="subjectList" style="min-height:60px;"></div>
+          <div id="subjectEmptyState" style="display:none;padding:32px 0;text-align:center;color:var(--text-muted);">
+            <svg class="icon-svg" aria-hidden="true" style="width:2rem;height:2rem;margin-bottom:8px;display:block;margin-inline:auto;"><use href="#ic-inbox"/></svg>
+            No subjects yet for this class. Add one above.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RESULTS ══ -->
+    <div class="tab-panel" id="tab-results">
+      <div class="page-title"><h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg> Enter Results</h1><p>Upload results per student, session, class and term</p></div>
+
+      <!-- Results visibility toggles -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h3 style="margin:0;">Results Visibility</h3>
+            <p style="margin:4px 0 0;font-size:.8rem;color:var(--text-muted);">Toggle off to hide results from students while you upload. Students see a generic "not available" message.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="setAllVisibility(true)">Enable All</button>
+            <button class="btn btn-outline btn-sm" onclick="setAllVisibility(false)">Disable All</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="visibilityToggles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Mode tabs -->
+      <div class="result-mode-nav" style="margin-bottom:18px;">
+        <button class="tab-btn active" id="rmode-student" onclick="switchResultMode('student')">
+          <svg class="icon-svg" aria-hidden="true"><use href="#ic-user"/></svg> By Student
+        </button>
+        <button class="tab-btn" id="rmode-bulk" onclick="switchResultMode('bulk')">
+          <svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg> By Subject (Bulk)
+        </button>
+      </div>
+
+      <!-- ── By Student mode ── -->
+      <div id="result-mode-student">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-body">
+            <div class="two-col">
+              <div class="form-group">
+                <label class="form-label">Class</label>
+                <select class="form-control" id="resultClass" onchange="loadResultStudents()">
+                  <option value="">— Select Class —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Term</label>
+                <select class="form-control" id="resultTerm">
+                  <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Session (e.g. 2024/2025)</label>
+                <input type="text" class="form-control" id="resultSession" placeholder="2024/2025"/>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="resultStudentList">
+          <div style="padding:30px;text-align:center;color:var(--text-muted);">Select a class above.</div>
+        </div>
+      </div>
+
+      <!-- ── By Subject (Bulk) mode ── -->
+      <div id="result-mode-bulk" style="display:none;">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-body">
+            <div class="two-col">
+              <div class="form-group">
+                <label class="form-label">Class</label>
+                <select class="form-control" id="bulkClass" onchange="loadBulkSubjects()">
+                  <option value="">— Select Class —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Subject</label>
+                <select class="form-control" id="bulkSubject" onchange="loadBulkGrid()">
+                  <option value="">— Select Subject —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Term</label>
+                <select class="form-control" id="bulkTerm" onchange="loadBulkGrid()">
+                  <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Session</label>
+                <input type="text" class="form-control" id="bulkSession" placeholder="2024/2025"/>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="bulkGridCard" style="display:none;">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <h3 id="bulkGridTitle">Bulk Entry</h3>
+            <button class="btn btn-primary" onclick="saveBulkResults()">
+              <svg class="icon-svg" aria-hidden="true"><use href="#ic-save"/></svg> Save All &amp; Compute
+            </button>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table id="bulkGrid" style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="padding:10px 14px;text-align:left;background:var(--primary);color:#fff;font-size:.82rem;">Student</th>
+                    <th style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">CA 1 <span style="opacity:.75;font-weight:400;">/20</span></th>
+                    <th style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">CA 2 <span style="opacity:.75;font-weight:400;">/20</span></th>
+                    <th style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">Exam <span style="opacity:.75;font-weight:400;">/60</span></th>
+                    <th style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="bulkGridBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="bulkGridEmpty" style="display:none;padding:32px;text-align:center;color:var(--text-muted);">
+          Select a class, subject and session above to load students.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCHEME ══ -->
+    <div class="tab-panel" id="tab-scheme">
+      <div class="page-title"><h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg> Scheme of Work</h1><p>Upload topics per subject and term</p></div>
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-body">
+          <div class="two-col">
+            <div class="form-group">
+              <label class="form-label">Class</label>
+              <select class="form-control" id="schemeClass" onchange="loadSchemeSubjects()">
+                <option value="">— Select Class —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subject</label>
+              <select class="form-control" id="schemeSubject" onchange="loadSchemeTopics()">
+                <option value="">— Select Subject —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Term</label>
+              <select class="form-control" id="schemeTerm" onchange="loadSchemeTopics()">
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="schemeEditorCard" style="display:none;">
+        <div class="card-header"><h3 id="schemeEditorTitle">Topics</h3></div>
+        <div class="card-body">
+          <div id="topicsContainer"></div>
+          <button class="btn btn-outline btn-sm" onclick="addTopicRow()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-plus"/></svg> Add Topic</button>
+          <div style="margin-top:16px;">
+            <button class="btn btn-primary" onclick="saveScheme()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-save"/></svg> Save Topics</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ANNOUNCEMENTS ══ -->
+    <div class="tab-panel" id="tab-announcements">
+      <div class="page-title"><h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg> Announcements</h1><p>Post notices and news for students</p></div>
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-header"><h3>Post New Announcement</h3></div>
+        <div class="card-body">
+          <div class="form-group"><label class="form-label">Title</label><input class="form-control" id="annTitle" placeholder="e.g. Mid-term Break Notice"/></div>
+          <div class="form-group">
+            <label class="form-label">Tag</label>
+            <select class="form-control" id="annTag">
+              <option value="">— No Tag —</option>
+              <option>General</option><option>Academic</option><option>Event</option><option>Holiday</option><option>Urgent</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Message</label><textarea class="form-control" id="annBody" rows="4" placeholder="Type your announcement..."></textarea></div>
+          <button class="btn btn-primary" onclick="postAnnouncement()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg> Post</button>
+        </div>
+      </div>
+      <div class="card"><div id="annList" style="padding:8px 0;"></div></div>
+    </div>
+  </main>
+</div>
+
+<!-- ══ ADD/EDIT STUDENT MODAL ══ -->
+<div class="modal-overlay" id="studentModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="studentModalTitle">Add New Student</h3>
+      <button class="modal-close" onclick="closeModal('studentModal')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="two-col">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Full Name</label>
+          <input class="form-control" id="sFullName" placeholder="e.g. Chioma Adebayo"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-control" id="sGender">
+            <option value="">— Select —</option>
+            <option>Male</option><option>Female</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Age</label>
+          <input type="number" class="form-control" id="sAge" placeholder="e.g. 7" min="1" max="25"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Class</label>
+          <select class="form-control" id="sClass"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year Registered</label>
+          <input type="number" class="form-control" id="sYear" placeholder="e.g. 2026" min="2020" max="2099"/>
+        </div>
+      </div>
+
+      <!-- Auto-generated ID and PIN -->
+      <div class="generated-box" id="generatedBox">
+        <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:6px;">AUTO-GENERATED</div>
+        <div class="id-display" id="genId">—</div>
+        <div style="font-size:.78rem;color:var(--text-muted);margin:4px 0 6px;">Student ID</div>
+        <div class="pin-display" id="genPin">—</div>
+        <div style="font-size:.78rem;color:var(--text-muted);margin-top:3px;">PIN (student uses this to log in)</div>
+      </div>
+      <div style="display:none;" id="editIdRow">
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Student ID (editing)</label>
+          <input class="form-control" id="editIdDisplay" disabled/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('studentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()" id="saveStudentBtn">Preview ID &amp; PIN →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT ENTRY MODAL (Lower: Nursery–Basic 3) ══ -->
+<div class="modal-overlay" id="lowerResultModal" style="display:none;">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="lowerResultTitle">Enter Result — Lower School</h3>
+      <button class="modal-close" onclick="closeModal('lowerResultModal')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <!-- Overview -->
+      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-clipboard"/></svg> General Info</div>
+      <div class="two-col">
+        <div class="form-group"><label class="form-label">Age at End of Term</label><input type="number" class="form-control" id="lr_age" placeholder="e.g. 8"/></div>
+        <div class="form-group"><label class="form-label">Conduct Rating (1–5)</label>
+          <select class="form-control" id="lr_conduct"><option value="1">1 — Poor</option><option value="2">2 — Fair</option><option value="3">3 — Good</option><option value="4">4 — Very Good</option><option value="5" selected>5 — Excellent</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Days Attended</label><input type="number" class="form-control" id="lr_daysAttended"/></div>
+        <div class="form-group"><label class="form-label">Days Absent</label><input type="number" class="form-control" id="lr_daysAbsent"/></div>
+        <div class="form-group"><label class="form-label">Term Ending Date</label><input type="date" class="form-control" id="lr_termEnd"/></div>
+        <div class="form-group"><label class="form-label">Next Term Resumption</label><input type="date" class="form-control" id="lr_resumption"/></div>
+      </div>
+
+      <!-- Subject Scores -->
+      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subject Scores (CA1/20 + CA2/20 + Exam/60)</div>
+      <div id="lowerScoresGrid"></div>
+
+      <!-- Traits -->
+      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-star"/></svg> Character Assessment</div>
+      <div id="traitsContainer"></div>
+
+      <!-- Activities -->
+      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-target"/></svg> Extra-Curricular Activities</div>
+      <div id="activitiesContainer"></div>
+      <button class="btn btn-outline btn-sm" onclick="addActivity()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-plus"/></svg> Add Activity</button>
+
+      <!-- Remarks -->
+      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-message"/></svg> Remarks</div>
+      <div class="form-group"><label class="form-label">Teacher's Name</label><input class="form-control" id="lr_teacherName"/></div>
+      <div class="form-group"><label class="form-label">Teacher's Remark</label><textarea class="form-control" id="lr_teacherRemark" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">Head Teacher's Remark</label><textarea class="form-control" id="lr_headRemark" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('lowerResultModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLowerResult()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-save"/></svg> Save &amp; Compute</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT ENTRY MODAL (Upper: Basic 4–9) ══ -->
+<div class="modal-overlay" id="upperResultModal" style="display:none;">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="upperResultTitle">Enter Result — Upper School</h3>
+      <button class="modal-close" onclick="closeModal('upperResultModal')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-clipboard"/></svg> General Info</div>
+      <div class="two-col">
+        <div class="form-group"><label class="form-label">Age at End of Term</label><input type="number" class="form-control" id="ur_age"/></div>
+        <div class="form-group"><label class="form-label">Number of School Days</label><input type="number" class="form-control" id="ur_schoolDays"/></div>
+        <div class="form-group"><label class="form-label">Days in Attendance</label><input type="number" class="form-control" id="ur_daysAttended"/></div>
+      </div>
+
+      <!-- Subjects -->
+      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subject Scores (CA1/20 + CA2/20 + Exam/60)</div>
+      <div id="upperScoresContainer"></div>
+
+      <!-- Remarks -->
+      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-message"/></svg> Remarks</div>
+      <div class="two-col">
+        <div class="form-group"><label class="form-label">Teacher's Name</label><input class="form-control" id="ur_teacherName"/></div>
+        <div class="form-group"><label class="form-label">Principal's Name</label><input class="form-control" id="ur_principalName"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Teacher's Remark</label><textarea class="form-control" id="ur_teacherRemark" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">Principal's Remark</label><textarea class="form-control" id="ur_principalRemark" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('upperResultModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUpperResult()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-save"/></svg> Save &amp; Compute</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+if (sessionStorage.getItem('adminLoggedIn') !== 'true') window.location.href = 'index.html';
+
+let allStudents = [];
+let editingStudentId = null;
+let currentResultStudentId = null;
+let currentResultClassName = null;
+let studentModalStep = 'form'; // 'form' | 'confirm'
+
+// ══ INIT ══
+async function init() {
+  auth.onAuthStateChanged(u => { if(!u) window.location.href='index.html'; else document.getElementById('adminEmailLabel').textContent = u.email; });
+  document.getElementById('sessionLabel').textContent = getCurrentSession();
+  document.getElementById('resultSession').value = getCurrentSession();
+  document.getElementById('bulkSession').value   = getCurrentSession();
+
+  // Populate class selects
+  ['resultClass','schemeClass','sClass','subjectClass','bulkClass'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    CLASSES.forEach(c => { const o = document.createElement('option'); o.value=c; o.textContent=c; el.appendChild(o); });
+  });
+
+  await loadAllStudents();
+  await loadAnnouncementsAdmin();
+  await loadVisibility();
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// ══ TABS ══
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('.admin-mobile-nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('nav-'+tab).classList.add('active');
+  const mn = document.getElementById('mnav-'+tab);
+  if (mn) mn.classList.add('active');
+}
+
+// ══ STUDENTS ══
+let _activeClass = ''; // currently viewed class in students tab
+
+async function loadAllStudents() {
+  const snap = await db.collection('students').get();
+  allStudents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderClassGrid();
+}
+
+function renderClassGrid() {
+  const grid = document.getElementById('classGrid');
+  if (!grid) return;
+  // Count students per class
+  const counts = {};
+  CLASSES.forEach(c => { counts[c] = 0; });
+  allStudents.forEach(s => { if (counts[s.currentClass] !== undefined) counts[s.currentClass]++; });
+
+  grid.innerHTML = CLASSES.map(cls => `
+    <div class="class-card" onclick="openClassStudents('${cls}')">
+      <div class="class-card__name">${cls}</div>
+      <div class="class-card__count">${counts[cls]} student${counts[cls] !== 1 ? 's' : ''}</div>
+    </div>
+  `).join('');
+}
+
+function openClassStudents(cls) {
+  _activeClass = cls;
+  document.getElementById('classGridView').style.display    = 'none';
+  document.getElementById('classStudentView').style.display = 'block';
+  document.getElementById('classStudentTitle').textContent  = cls;
+  document.getElementById('searchStudents').value = '';
+  renderStudentList();
+}
+
+function backToClassGrid() {
+  _activeClass = '';
+  document.getElementById('classGridView').style.display    = 'block';
+  document.getElementById('classStudentView').style.display = 'none';
+}
+
+function renderStudentList() {
+  const search = (document.getElementById('searchStudents')?.value||'').toLowerCase();
+  const list   = allStudents.filter(s =>
+    s.currentClass === _activeClass &&
+    (!search || s.fullName?.toLowerCase().includes(search) || s.id?.toLowerCase().includes(search))
+  );
+  const container = document.getElementById('studentList');
+  if (!list.length) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">No students found in this class.</div>';
+    return;
+  }
+  container.innerHTML = list.map(s => `
+    <div class="s-row">
+      <div class="s-avatar">${(s.fullName||'?')[0].toUpperCase()}</div>
+      <div class="s-info">
+        <div class="name">${s.fullName} <span style="font-size:.75rem;color:var(--text-muted);">${s.gender||''}</span></div>
+        <div class="meta">ID: ${s.id} · Age: ${s.age} · Reg: ${s.yearRegistered} · PIN: ${s.pin}</div>
+      </div>
+      <div class="s-actions">
+        <button class="btn btn-outline btn-sm" onclick="openEditStudent('${s.id}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg> Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}','${s.fullName}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-trash"/></svg></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAddStudent() {
+  editingStudentId = null;
+  studentModalStep = 'form';
+  document.getElementById('studentModalTitle').textContent = 'Add New Student';
+  ['sFullName','sAge','sYear'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('sGender').value='';
+  document.getElementById('sClass').value='';
+  document.getElementById('generatedBox').style.display='none';
+  document.getElementById('editIdRow').style.display='none';
+  document.getElementById('saveStudentBtn').textContent='Preview ID & PIN →';
+  openModal('studentModal');
+}
+
+function openEditStudent(id) {
+  const s = allStudents.find(x => x.id===id);
+  if (!s) return;
+  editingStudentId = id;
+  studentModalStep = 'confirm';
+  document.getElementById('studentModalTitle').textContent = 'Edit Student';
+  document.getElementById('sFullName').value = s.fullName||'';
+  document.getElementById('sGender').value   = s.gender||'';
+  document.getElementById('sAge').value      = s.age||'';
+  document.getElementById('sClass').value    = s.currentClass||'';
+  document.getElementById('sYear').value     = s.yearRegistered||'';
+  document.getElementById('generatedBox').style.display='none';
+  document.getElementById('editIdRow').style.display='block';
+  document.getElementById('editIdDisplay').value = id;
+  document.getElementById('saveStudentBtn').textContent='<svg class="icon-svg" aria-hidden="true"><use href="#ic-save"/></svg> Save Changes';
+  openModal('studentModal');
+}
+
+async function saveStudent() {
+  const name   = document.getElementById('sFullName').value.trim();
+  const gender = document.getElementById('sGender').value;
+  const age    = document.getElementById('sAge').value;
+  const cls    = document.getElementById('sClass').value;
+  const year   = parseInt(document.getElementById('sYear').value);
+
+  if (!name||!gender||!age||!cls||!year) return showToast('Fill in all fields.','error');
+
+  // If editing, skip ID generation
+  if (editingStudentId) {
+    try {
+      await db.collection('students').doc(editingStudentId).update({ fullName:name, gender, age:Number(age), currentClass:cls, yearRegistered:year });
+      showToast(`${name} updated.`);
+      closeModal('studentModal');
+      await loadAllStudents();
+      if (_activeClass) openClassStudents(_activeClass);
+    } catch(e) { showToast('Error saving.','error'); console.error(e); }
+    return;
+  }
+
+  // Step 1: show preview
+  if (studentModalStep === 'form') {
+    try {
+      // Preview the ID (but don't consume the counter yet)
+      const counterSnap = await db.collection('id_counters').doc(String(year)).get();
+      const nextSerial = ((counterSnap.exists ? counterSnap.data().count : 0) + 1);
+      const serialStr = String(nextSerial).padStart(3,'0');
+      const previewId  = `DGS-${serialStr}-${year}`;
+      const previewPin = generatePin(nextSerial, year);
+
+      document.getElementById('genId').textContent  = previewId;
+      document.getElementById('genPin').textContent = previewPin;
+      document.getElementById('generatedBox').style.display = 'block';
+      document.getElementById('saveStudentBtn').innerHTML = '<svg class="icon-svg" aria-hidden="true"><use href="#ic-check"/></svg> Confirm &amp; Save Student';
+      studentModalStep = 'confirm';
+    } catch(e) { showToast('Error generating ID.','error'); console.error(e); }
+    return;
+  }
+
+  // Step 2: actually save
+  try {
+    const newId = await generateStudentId(year);
+    const serial = serialFromId(newId);
+    const pin    = generatePin(serial, year);
+
+    await db.collection('students').doc(newId).set({
+      fullName: name, gender, age: Number(age),
+      currentClass: cls, yearRegistered: year, pin,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast(`${name} added! ID: ${newId} · PIN: ${pin}`);
+    closeModal('studentModal');
+    await loadAllStudents();
+    if (_activeClass) openClassStudents(_activeClass);
+  } catch(e) { showToast('Error saving student.','error'); console.error(e); }
+}
+
+async function deleteStudent(id, name) {
+  if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+  await db.collection('students').doc(id).delete();
+  showToast(`${name} deleted.`);
+  await loadAllStudents();
+  if (_activeClass) openClassStudents(_activeClass);
+}
+
+// ══ RESULTS — Student List ══
+async function loadResultStudents() {
+  const cls = document.getElementById('resultClass').value;
+  const container = document.getElementById('resultStudentList');
+  if (!cls) { container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-muted);">Select a class.</div>'; return; }
+  const students = allStudents.filter(s => s.currentClass===cls);
+  const isLower  = isNurseryOrLowerPrimary(cls);
+  if (!students.length) { container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-muted);">No students in this class.</div>'; return; }
+
+  container.innerHTML = students.map(s => `
+    <div class="s-row">
+      <div class="s-avatar">${s.fullName[0].toUpperCase()}</div>
+      <div class="s-info"><div class="name">${s.fullName}</div><div class="meta">${s.id}</div></div>
+      <span class="result-type-badge ${isLower?'badge-lower':'badge-upper'}">${isLower?'Lower School':'Upper School'}</span>
+      <button class="btn btn-accent btn-sm" onclick="openResultModal('${s.id}','${cls}','${s.fullName}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg> Enter Result</button>
+    </div>
+  `).join('');
+}
+
+function openResultModal(studentId, className, studentName) {
+  currentResultStudentId = studentId;
+  currentResultClassName = className;
+  if (isNurseryOrLowerPrimary(className)) openLowerResultModal(studentId, className, studentName);
+  else openUpperResultModal(studentId, className, studentName);
+}
+
+// ══ LOWER RESULT MODAL ══
+async function openLowerResultModal(studentId, className, studentName) {
+  document.getElementById('lowerResultTitle').textContent = `${studentName} — ${className} Result`;
+  const subjects = await getSubjectsForClass(className);
+
+  // Subject scores — same CA1/CA2/Exam structure as upper school
+  document.getElementById('lowerScoresGrid').innerHTML = subjects.map(subj => `
+    <div class="subject-score-section">
+      <h4>${subj}</h4>
+      <div class="three-col">
+        <div class="score-card"><label>CA 1 (max 20)</label><input type="number" min="0" max="20" id="ls_ca1_${sanitize(subj)}" placeholder="0–20"/></div>
+        <div class="score-card"><label>CA 2 (max 20)</label><input type="number" min="0" max="20" id="ls_ca2_${sanitize(subj)}" placeholder="0–20"/></div>
+        <div class="score-card"><label>Exam (max 60)</label><input type="number" min="0" max="60" id="ls_exam_${sanitize(subj)}" placeholder="0–60"/></div>
+      </div>
+    </div>
+  `).join('');
+
+  // Traits
+  const traits = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
+  document.getElementById('traitsContainer').innerHTML = traits.map(t =>
+    `<div class="star-input-row">
+       <label>${t}</label>
+       <div class="star-btns" id="trait_${sanitize(t)}">
+         ${[1,2,3,4,5].map(i=>`<button type="button" onclick="setStar('trait_${sanitize(t)}',${i})" data-val="${i}">★</button>`).join('')}
+       </div>
+     </div>`
+  ).join('');
+
+  // Activities
+  document.getElementById('activitiesContainer').innerHTML = '';
+  addActivity(); addActivity(); addActivity();
+
+  // Load existing
+  const term    = document.getElementById('resultTerm').value;
+  const session = document.getElementById('resultSession').value;
+  try {
+    const snap = await db.collection('results')
+      .where('studentId','==',studentId)
+      .where('className','==',className)
+      .where('term','==',term)
+      .where('session','==',session)
+      .limit(1).get();
+    if (!snap.empty) {
+      const r = snap.docs[0].data();
+      subjects.forEach(s => {
+        const sc = r.scores?.[s] || {};
+        const ca1El  = document.getElementById(`ls_ca1_${sanitize(s)}`);
+        const ca2El  = document.getElementById(`ls_ca2_${sanitize(s)}`);
+        const examEl = document.getElementById(`ls_exam_${sanitize(s)}`);
+        if (ca1El)  ca1El.value  = sc.ca1  ?? '';
+        if (ca2El)  ca2El.value  = sc.ca2  ?? '';
+        if (examEl) examEl.value = sc.exam ?? '';
+      });
+      document.getElementById('lr_age').value      = r.ageAtEndOfTerm||'';
+      document.getElementById('lr_conduct').value  = r.conductRating||5;
+      document.getElementById('lr_daysAttended').value = r.daysAttended||'';
+      document.getElementById('lr_daysAbsent').value   = r.daysAbsent||'';
+      document.getElementById('lr_termEnd').value      = r.termEndingDate||'';
+      document.getElementById('lr_resumption').value   = r.resumptionDate||'';
+      document.getElementById('lr_teacherName').value  = r.teacherName||'';
+      document.getElementById('lr_teacherRemark').value= r.teacherRemark||'';
+      document.getElementById('lr_headRemark').value   = r.headTeacherRemark||'';
+      if (r.traits) Object.entries(r.traits).forEach(([k,v]) => {
+        const id = `trait_${k}`;
+        setStar(id, v);
+      });
+    }
+  } catch(e) {}
+  openModal('lowerResultModal');
+}
+
+function addActivity() {
+  const c = document.getElementById('activitiesContainer');
+  const i = Date.now();
+  c.insertAdjacentHTML('beforeend', `
+    <div class="activity-entry" id="act_${i}">
+      <input class="form-control" placeholder="Activity name (e.g. Football)" id="actName_${i}"/>
+      <div class="star-btns" id="actStar_${i}">
+        ${[1,2,3,4,5].map(n=>`<button type="button" onclick="setStar('actStar_${i}',${n})" data-val="${n}">★</button>`).join('')}
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="document.getElementById('act_${i}').remove()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-x"/></svg></button>
+    </div>
+  `);
+}
+
+function setStar(containerId, val) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.querySelectorAll('button').forEach(b => {
+    b.classList.toggle('lit', parseInt(b.dataset.val) <= val);
+  });
+  c.dataset.value = val;
+}
+
+function getStarValue(containerId) {
+  const c = document.getElementById(containerId);
+  return parseInt(c?.dataset?.value||0);
+}
+
+async function saveLowerResult() {
+  const studentId = currentResultStudentId;
+  const className = currentResultClassName;
+  const term      = document.getElementById('resultTerm').value;
+  const session   = document.getElementById('resultSession').value;
+  const subjects  = await getSubjectsForClass(className);
+
+  if (!session) return showToast('Enter the session.','error');
+
+  const scores = {};
+  subjects.forEach(s => {
+    const ca1El  = document.getElementById(`ls_ca1_${sanitize(s)}`);
+    const ca2El  = document.getElementById(`ls_ca2_${sanitize(s)}`);
+    const examEl = document.getElementById(`ls_exam_${sanitize(s)}`);
+    const hasAny = (ca1El?.value||'') !== '' || (ca2El?.value||'') !== '' || (examEl?.value||'') !== '';
+    if (!hasAny) return;
+    const ca1  = Number(ca1El?.value||0);
+    const ca2  = Number(ca2El?.value||0);
+    const exam = Number(examEl?.value||0);
+    scores[s]  = { ca1, ca2, exam, total: computeTotal(ca1, ca2, exam) };
+  });
+
+  const enteredSubjects = Object.keys(scores);
+  const totals   = enteredSubjects.map(s => scores[s].total);
+  const average  = totals.length ? Math.round(totals.reduce((a,b)=>a+b,0)/totals.length) : 0;
+  const passFail = average >= 40 ? 'Pass' : 'Fail';
+
+  const traits = {};
+  ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'].forEach(t => {
+    traits[t.replace(/\s+/g,'_').toLowerCase()] = getStarValue(`trait_${sanitize(t)}`);
+  });
+
+  const activities = [];
+  document.querySelectorAll('#activitiesContainer .activity-entry').forEach(row => {
+    const nameEl = row.querySelector('input[id^="actName"]');
+    const starEl = row.querySelector('.star-btns');
+    if (nameEl?.value.trim()) {
+      activities.push({ name: nameEl.value.trim(), rating: parseInt(starEl?.dataset?.value||0) });
+    }
+  });
+
+  const resultData = {
+    studentId, className, term, session,
+    ageAtEndOfTerm:    Number(document.getElementById('lr_age').value)||0,
+    conductRating:     Number(document.getElementById('lr_conduct').value),
+    daysAttended:      Number(document.getElementById('lr_daysAttended').value)||0,
+    daysAbsent:        Number(document.getElementById('lr_daysAbsent').value)||0,
+    termEndingDate:    document.getElementById('lr_termEnd').value,
+    resumptionDate:    document.getElementById('lr_resumption').value,
+    teacherName:       document.getElementById('lr_teacherName').value.trim(),
+    teacherRemark:     document.getElementById('lr_teacherRemark').value.trim(),
+    headTeacherRemark: document.getElementById('lr_headRemark').value.trim(),
+    scores, traits, activities, average, passFail,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    // Compute subject class averages and positions
+    await computeLowerClassStats(className, term, session, studentId, scores, resultData);
+    showToast('Result saved and computed!');
+    closeModal('lowerResultModal');
+  } catch(e) { showToast('Error saving result.','error'); console.error(e); }
+}
+
+async function computeLowerClassStats(className, term, session, thisStudentId, thisScores, resultData) {
+  const docId = `${thisStudentId}_${className}_${session}_${term}`.replace(/[\s/]/g,'_');
+  await db.collection('results').doc(docId).set(resultData);
+
+  const snap = await db.collection('results')
+    .where('className','==',className).where('term','==',term).where('session','==',session).get();
+  const allResultDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const subjects = await getSubjectsForClass(className);
+
+  // Overall class average and positions
+  const classAvg = allResultDocs.length
+    ? Math.round(allResultDocs.reduce((s,r)=>s+(r.average||0),0)/allResultDocs.length) : 0;
+  const sorted = [...allResultDocs].sort((a,b)=>(b.average||0)-(a.average||0));
+  const batch = db.batch();
+  let pos = 1;
+  sorted.forEach((r,i) => {
+    if (i>0 && (r.average||0)<(sorted[i-1].average||0)) pos=i+1;
+    batch.update(db.collection('results').doc(r.id), { overallPosition: pos, classAverage: classAvg });
+  });
+
+  // Subject stats: highest, lowest, positions
+  subjects.forEach(subj => {
+    const subjectTotals = allResultDocs
+      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
+      .filter(x => x.total > 0)
+      .sort((a,b) => b.total - a.total);
+    if (!subjectTotals.length) return;
+    const highest = subjectTotals[0].total;
+    const lowest  = subjectTotals[subjectTotals.length-1].total;
+    const subjectAvg = Math.round(subjectTotals.reduce((s,x)=>s+x.total,0)/subjectTotals.length);
+    let sp = 1;
+    subjectTotals.forEach((x,i) => {
+      if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
+      batch.update(db.collection('results').doc(x.id), {
+        [`subjectHighest.${subj}`]: highest,
+        [`subjectLowest.${subj}`]:  lowest,
+        [`subjectClassAvg.${subj}`]: subjectAvg,
+        [`subjectPositions.${subj}`]: sp
+      });
+    });
+  });
+  await batch.commit();
+}
+
+// ══ UPPER RESULT MODAL ══
+async function openUpperResultModal(studentId, className, studentName) {
+  document.getElementById('upperResultTitle').textContent = `${studentName} — ${className} Result`;
+  const subjects = await getSubjectsForClass(className);
+
+  document.getElementById('upperScoresContainer').innerHTML = subjects.map(subj => `
+    <div class="subject-score-section">
+      <h4>${subj}</h4>
+      <div class="three-col">
+        <div class="score-card"><label>CA 1 (max 20)</label><input type="number" min="0" max="20" id="us_ca1_${sanitize(subj)}" placeholder="0–20"/></div>
+        <div class="score-card"><label>CA 2 (max 20)</label><input type="number" min="0" max="20" id="us_ca2_${sanitize(subj)}" placeholder="0–20"/></div>
+        <div class="score-card"><label>Exam (max 60)</label><input type="number" min="0" max="60" id="us_exam_${sanitize(subj)}" placeholder="0–60"/></div>
+      </div>
+    </div>
+  `).join('');
+
+  // Load existing
+  const term    = document.getElementById('resultTerm').value;
+  const session = document.getElementById('resultSession').value;
+  try {
+    const snap = await db.collection('results')
+      .where('studentId','==',studentId).where('className','==',className)
+      .where('term','==',term).where('session','==',session).limit(1).get();
+    if (!snap.empty) {
+      const r = snap.docs[0].data();
+      subjects.forEach(s => {
+        const sc = r.scores?.[s]||{};
+        const ca1El  = document.getElementById(`us_ca1_${sanitize(s)}`);
+        const ca2El  = document.getElementById(`us_ca2_${sanitize(s)}`);
+        const exEl   = document.getElementById(`us_exam_${sanitize(s)}`);
+        if(ca1El) ca1El.value = sc.ca1||'';
+        if(ca2El) ca2El.value = sc.ca2||'';
+        if(exEl)  exEl.value  = sc.exam||'';
+      });
+      document.getElementById('ur_age').value           = r.ageAtEndOfTerm||'';
+      document.getElementById('ur_schoolDays').value    = r.schoolDays||'';
+      document.getElementById('ur_daysAttended').value  = r.daysAttended||'';
+      document.getElementById('ur_teacherName').value   = r.teacherName||'';
+      document.getElementById('ur_principalName').value = r.principalName||'';
+      document.getElementById('ur_teacherRemark').value = r.teacherRemark||'';
+      document.getElementById('ur_principalRemark').value = r.principalRemark||'';
+    }
+  } catch(e) {}
+  openModal('upperResultModal');
+}
+
+async function saveUpperResult() {
+  const studentId = currentResultStudentId;
+  const className = currentResultClassName;
+  const term      = document.getElementById('resultTerm').value;
+  const session   = document.getElementById('resultSession').value;
+  const subjects  = await getSubjectsForClass(className);
+
+  if (!session) return showToast('Enter the session.','error');
+
+  const scores = {};
+  subjects.forEach(s => {
+    const ca1El  = document.getElementById(`us_ca1_${sanitize(s)}`);
+    const ca2El  = document.getElementById(`us_ca2_${sanitize(s)}`);
+    const examEl = document.getElementById(`us_exam_${sanitize(s)}`);
+    const hasAny = (ca1El?.value||'') !== '' || (ca2El?.value||'') !== '' || (examEl?.value||'') !== '';
+    if (!hasAny) return; // skip subjects with no scores entered
+    const ca1  = Number(ca1El?.value||0);
+    const ca2  = Number(ca2El?.value||0);
+    const exam = Number(examEl?.value||0);
+    scores[s]  = { ca1, ca2, exam, total: computeTotal(ca1,ca2,exam) };
+  });
+
+  const enteredSubjects = Object.keys(scores);
+  if (!enteredSubjects.length) return showToast('Enter at least one subject score.','error');
+  const totals    = enteredSubjects.map(s => scores[s].total);
+  const average   = Math.round(totals.reduce((a,b)=>a+b,0) / totals.length);
+  const passFail  = average >= 40 ? 'Pass' : 'Fail';
+
+  const resultData = {
+    studentId, className, term, session,
+    ageAtEndOfTerm: Number(document.getElementById('ur_age').value)||0,
+    schoolDays:     Number(document.getElementById('ur_schoolDays').value)||0,
+    daysAttended:   Number(document.getElementById('ur_daysAttended').value)||0,
+    teacherName:    document.getElementById('ur_teacherName').value.trim(),
+    principalName:  document.getElementById('ur_principalName').value.trim(),
+    teacherRemark:  document.getElementById('ur_teacherRemark').value.trim(),
+    principalRemark:document.getElementById('ur_principalRemark').value.trim(),
+    scores, average, passFail,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await computeUpperClassStats(className, term, session, studentId, scores, resultData);
+    showToast('Result saved and computed!');
+    closeModal('upperResultModal');
+  } catch(e) { showToast('Error saving result.','error'); console.error(e); }
+}
+
+async function computeUpperClassStats(className, term, session, thisStudentId, thisScores, resultData) {
+  const docId = `${thisStudentId}_${className}_${session}_${term}`.replace(/[\s/]/g,'_');
+  await db.collection('results').doc(docId).set(resultData);
+
+  // All results for this class/term/session
+  const snap = await db.collection('results')
+    .where('className','==',className).where('term','==',term).where('session','==',session).get();
+  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const subjects = await getSubjectsForClass(className);
+
+  // Class average (overall)
+  const classAvg = allDocs.length
+    ? Math.round(allDocs.reduce((s,r)=>s+(r.average||0),0)/allDocs.length) : 0;
+
+  // Overall positions
+  const sorted = [...allDocs].sort((a,b)=>(b.average||0)-(a.average||0));
+  const batch = db.batch();
+  let pos = 1;
+  sorted.forEach((r,i) => {
+    if (i>0 && (r.average||0)<(sorted[i-1].average||0)) pos=i+1;
+    batch.update(db.collection('results').doc(r.id), { overallPosition: pos, classAverage: classAvg });
+  });
+
+  // Subject stats: highest, lowest, subject positions
+  subjects.forEach(subj => {
+    const subjectTotals = allDocs
+      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
+      .filter(x => x.total > 0)
+      .sort((a,b) => b.total - a.total);
+    if (!subjectTotals.length) return;
+    const highest = subjectTotals[0].total;
+    const lowest  = subjectTotals[subjectTotals.length-1].total;
+    let sp = 1;
+    subjectTotals.forEach((x,i) => {
+      if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
+      batch.update(db.collection('results').doc(x.id), {
+        [`subjectHighest.${subj}`]: highest,
+        [`subjectLowest.${subj}`]:  lowest,
+        [`subjectPositions.${subj}`]: sp
+      });
+    });
+  });
+
+  await batch.commit();
+}
+
+// ══ SCHEME ══
+async function loadSchemeSubjects() {
+  const cls = document.getElementById('schemeClass').value;
+  const sel = document.getElementById('schemeSubject');
+  sel.innerHTML='<option value="">— Select Subject —</option>';
+  if (!cls) return;
+  const subjects = await getSubjectsForClass(cls);
+  subjects.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+  document.getElementById('schemeEditorCard').style.display='none';
+}
+
+async function loadSchemeTopics() {
+  const cls  = document.getElementById('schemeClass').value;
+  const subj = document.getElementById('schemeSubject').value;
+  const term = document.getElementById('schemeTerm').value;
+  if (!cls||!subj) return;
+  document.getElementById('schemeEditorTitle').textContent=`${subj} — ${term}`;
+  document.getElementById('schemeEditorCard').style.display='block';
+  const id = `${cls}_${subj}_${term}`.replace(/\s+/g,'_');
+  try {
+    const snap = await db.collection('schemes').doc(id).get();
+    const topics = snap.exists ? snap.data().topics||[] : [];
+    const c = document.getElementById('topicsContainer');
+    c.innerHTML='';
+    (topics.length ? topics : ['']).forEach(t => addTopicRow(t));
+  } catch(e) { addTopicRow(''); }
+}
+
+function addTopicRow(val='') {
+  const c = document.getElementById('topicsContainer');
+  const d = document.createElement('div');
+  d.style.cssText='display:flex;gap:8px;margin-bottom:8px;';
+  d.innerHTML=`<input class="form-control" value="${val}" placeholder="Enter topic..."/><button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>`;
+  c.appendChild(d);
+}
+
+async function saveScheme() {
+  const cls  = document.getElementById('schemeClass').value;
+  const subj = document.getElementById('schemeSubject').value;
+  const term = document.getElementById('schemeTerm').value;
+  if (!cls||!subj) return showToast('Select class and subject.','error');
+  const topics = Array.from(document.querySelectorAll('#topicsContainer input')).map(i=>i.value.trim()).filter(Boolean);
+  const id = `${cls}_${subj}_${term}`.replace(/\s+/g,'_');
+  await db.collection('schemes').doc(id).set({ className:cls, subject:subj, term, topics });
+  showToast('Scheme saved!');
+}
+
+// ══ ANNOUNCEMENTS ══
+async function postAnnouncement() {
+  const title = document.getElementById('annTitle').value.trim();
+  const body  = document.getElementById('annBody').value.trim();
+  const tag   = document.getElementById('annTag').value;
+  if (!title||!body) return showToast('Fill in title and message.','error');
+  await db.collection('announcements').add({ title, body, tag, date: firebase.firestore.FieldValue.serverTimestamp() });
+  showToast('Announcement posted!');
+  document.getElementById('annTitle').value='';
+  document.getElementById('annBody').value='';
+  await loadAnnouncementsAdmin();
+}
+
+async function loadAnnouncementsAdmin() {
+  const snap = await db.collection('announcements').orderBy('date','desc').get();
+  const c = document.getElementById('annList');
+  if (snap.empty) { c.innerHTML='<div style="padding:24px;text-align:center;color:var(--text-muted);">No announcements yet.</div>'; return; }
+  c.innerHTML = snap.docs.map(doc => {
+    const a = doc.data();
+    const date = a.date?.toDate ? a.date.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    return `<div class="s-row">
+      <div style="flex:1;"><div style="font-weight:600;">${a.title}${a.tag?` <span class="badge" style="background:var(--primary);color:#fff;">${a.tag}</span>`:''}</div>
+      <div style="font-size:.76rem;color:var(--text-muted);">${date}</div>
+      <div style="font-size:.86rem;margin-top:3px;">${a.body.substring(0,100)}${a.body.length>100?'…':''}</div></div>
+      <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${doc.id}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-trash"/></svg></button></div>`;
+  }).join('');
+}
+
+async function deleteAnnouncement(id) {
+  if (!confirm('Delete this announcement?')) return;
+  await db.collection('announcements').doc(id).delete();
+  showToast('Deleted.');
+  await loadAnnouncementsAdmin();
+}
+
+// ══ RESULT MODE SWITCHER ══
+function switchResultMode(mode) {
+  document.getElementById('result-mode-student').style.display = mode==='student' ? 'block' : 'none';
+  document.getElementById('result-mode-bulk').style.display    = mode==='bulk'    ? 'block' : 'none';
+  document.getElementById('rmode-student').classList.toggle('active', mode==='student');
+  document.getElementById('rmode-bulk').classList.toggle('active',    mode==='bulk');
+}
+
+// ══ BULK ENTRY ══
+async function loadBulkSubjects() {
+  const cls = document.getElementById('bulkClass').value;
+  const sel = document.getElementById('bulkSubject');
+  sel.innerHTML = '<option value="">— Select Subject —</option>';
+  document.getElementById('bulkGridCard').style.display  = 'none';
+  document.getElementById('bulkGridEmpty').style.display = 'none';
+  if (!cls) return;
+  const subjects = await getSubjectsForClass(cls);
+  subjects.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    sel.appendChild(o);
+  });
+}
+
+async function loadBulkGrid() {
+  const cls     = document.getElementById('bulkClass').value;
+  const subject = document.getElementById('bulkSubject').value;
+  const term    = document.getElementById('bulkTerm').value;
+  const session = document.getElementById('bulkSession').value;
+
+  const card  = document.getElementById('bulkGridCard');
+  const empty = document.getElementById('bulkGridEmpty');
+
+  if (!cls || !subject || !session) {
+    card.style.display  = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  // Students in this class
+  const students = allStudents.filter(s => s.currentClass === cls);
+  if (!students.length) {
+    card.style.display  = 'none';
+    empty.style.display = 'block';
+    document.getElementById('bulkGridEmpty').textContent = 'No students found in this class.';
+    return;
+  }
+
+  document.getElementById('bulkGridTitle').textContent = `${cls} · ${subject} · ${term} · ${session}`;
+
+  // Fetch existing scores for this class/term/session to pre-fill
+  let existingResults = {};
+  try {
+    const snap = await db.collection('results')
+      .where('className','==',cls)
+      .where('term','==',term)
+      .where('session','==',session)
+      .get();
+    snap.docs.forEach(d => {
+      const data = d.data();
+      existingResults[data.studentId] = data;
+    });
+  } catch(e) { console.warn('Could not pre-fetch results:', e); }
+
+  // Build table rows
+  const tbody = document.getElementById('bulkGridBody');
+  tbody.innerHTML = students.map((s, idx) => {
+    const existing = existingResults[s.id]?.scores?.[subject] || {};
+    const ca1  = existing.ca1  ?? '';
+    const ca2  = existing.ca2  ?? '';
+    const exam = existing.exam ?? '';
+    const total = (ca1!==''||ca2!==''||exam!=='') ? computeTotal(Number(ca1||0),Number(ca2||0),Number(exam||0)) : '—';
+    const rowBg = idx % 2 === 0 ? '' : 'style="background:var(--bg);"';
+    return `
+      <tr ${rowBg} id="bulk-row-${s.id}">
+        <td style="padding:10px 14px;font-weight:500;font-size:.88rem;">
+          ${s.fullName}
+          <div style="font-size:.74rem;color:var(--text-muted);">${s.id}</div>
+        </td>
+        <td style="padding:6px 8px;text-align:center;">
+          <input type="number" min="0" max="20" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
+            id="bulk_ca1_${s.id}" value="${ca1}" placeholder="0–20" oninput="updateBulkTotal('${s.id}')"/>
+        </td>
+        <td style="padding:6px 8px;text-align:center;">
+          <input type="number" min="0" max="20" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
+            id="bulk_ca2_${s.id}" value="${ca2}" placeholder="0–20" oninput="updateBulkTotal('${s.id}')"/>
+        </td>
+        <td style="padding:6px 8px;text-align:center;">
+          <input type="number" min="0" max="60" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
+            id="bulk_exam_${s.id}" value="${exam}" placeholder="0–60" oninput="updateBulkTotal('${s.id}')"/>
+        </td>
+        <td style="padding:10px 14px;text-align:center;font-weight:700;color:var(--primary);" id="bulk_total_${s.id}">${total}</td>
+      </tr>`;
+  }).join('');
+
+  card.style.display  = 'block';
+  empty.style.display = 'none';
+}
+
+function updateBulkTotal(studentId) {
+  const ca1  = Number(document.getElementById(`bulk_ca1_${studentId}`)?.value||0);
+  const ca2  = Number(document.getElementById(`bulk_ca2_${studentId}`)?.value||0);
+  const exam = Number(document.getElementById(`bulk_exam_${studentId}`)?.value||0);
+  const totalEl = document.getElementById(`bulk_total_${studentId}`);
+  if (totalEl) totalEl.textContent = computeTotal(ca1, ca2, exam);
+}
+
+async function saveBulkResults() {
+  const cls     = document.getElementById('bulkClass').value;
+  const subject = document.getElementById('bulkSubject').value;
+  const term    = document.getElementById('bulkTerm').value;
+  const session = document.getElementById('bulkSession').value;
+
+  if (!cls||!subject||!session) return showToast('Fill in class, subject and session.','error');
+
+  const students = allStudents.filter(s => s.currentClass === cls);
+  if (!students.length) return showToast('No students in this class.','error');
+
+  showLoading('loadingOverlay', true);
+
+  try {
+    // Step 1: fetch all existing results for this class/term/session
+    const existingSnap = await db.collection('results')
+      .where('className','==',cls).where('term','==',term).where('session','==',session).get();
+    const existingMap = {};
+    existingSnap.docs.forEach(d => { existingMap[d.data().studentId] = { id: d.id, ...d.data() }; });
+
+    // Step 2: write updated scores for each student
+    const batch = db.batch();
+    students.forEach(s => {
+      const ca1El  = document.getElementById(`bulk_ca1_${s.id}`);
+      const ca2El  = document.getElementById(`bulk_ca2_${s.id}`);
+      const examEl = document.getElementById(`bulk_exam_${s.id}`);
+      if (!ca1El) return;
+
+      const hasAny = (ca1El.value||'')!=='' || (ca2El.value||'')!=='' || (examEl.value||'')!=='';
+      if (!hasAny) return; // skip students with no scores entered
+
+      const ca1  = Number(ca1El.value||0);
+      const ca2  = Number(ca2El.value||0);
+      const exam = Number(examEl.value||0);
+      const total = computeTotal(ca1, ca2, exam);
+
+      const docId = `${s.id}_${cls}_${session}_${term}`.replace(/[\s/]/g,'_');
+      const ref   = db.collection('results').doc(docId);
+
+      // Merge into existing doc so we don't wipe traits/remarks/attendance
+      batch.set(ref, {
+        studentId: s.id, className: cls, term, session,
+        [`scores.${subject}`]: { ca1, ca2, exam, total },
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    });
+    await batch.commit();
+
+    // Step 3: recalculate class stats for this subject
+    await recomputeClassStats(cls, term, session);
+
+    showToast(`Scores saved and computed for ${subject}!`);
+  } catch(e) {
+    showToast('Error saving bulk results.','error');
+    console.error(e);
+  } finally {
+    showLoading('loadingOverlay', false);
+  }
+}
+
+// Recompute overall positions, averages, and subject stats after any save
+async function recomputeClassStats(cls, term, session) {
+  const snap = await db.collection('results')
+    .where('className','==',cls).where('term','==',term).where('session','==',session).get();
+  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const subjects = await getSubjectsForClass(cls);
+
+  // Recompute each student's overall average from all their scores
+  const batch1 = db.batch();
+  allDocs.forEach(r => {
+    const enteredSubjects = Object.keys(r.scores||{});
+    if (!enteredSubjects.length) return;
+    const totals  = enteredSubjects.map(s => r.scores[s]?.total||0);
+    const average = Math.round(totals.reduce((a,b)=>a+b,0)/totals.length);
+    const passFail = average >= 40 ? 'Pass' : 'Fail';
+    batch1.update(db.collection('results').doc(r.id), { average, passFail });
+  });
+  await batch1.commit();
+
+  // Re-fetch with updated averages
+  const snap2   = await db.collection('results')
+    .where('className','==',cls).where('term','==',term).where('session','==',session).get();
+  const allDocs2 = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  const classAvg = allDocs2.length
+    ? Math.round(allDocs2.reduce((s,r)=>s+(r.average||0),0)/allDocs2.length) : 0;
+  const sorted = [...allDocs2].sort((a,b)=>(b.average||0)-(a.average||0));
+
+  const batch2 = db.batch();
+  let pos = 1;
+  sorted.forEach((r,i) => {
+    if (i>0 && (r.average||0)<(sorted[i-1].average||0)) pos=i+1;
+    batch2.update(db.collection('results').doc(r.id), { overallPosition: pos, classAverage: classAvg });
+  });
+
+  subjects.forEach(subj => {
+    const subjectTotals = allDocs2
+      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
+      .filter(x => x.total > 0)
+      .sort((a,b) => b.total - a.total);
+    if (!subjectTotals.length) return;
+    const highest    = subjectTotals[0].total;
+    const lowest     = subjectTotals[subjectTotals.length-1].total;
+    const subjectAvg = Math.round(subjectTotals.reduce((s,x)=>s+x.total,0)/subjectTotals.length);
+    let sp = 1;
+    subjectTotals.forEach((x,i) => {
+      if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
+      batch2.update(db.collection('results').doc(x.id), {
+        [`subjectHighest.${subj}`]: highest,
+        [`subjectLowest.${subj}`]:  lowest,
+        [`subjectClassAvg.${subj}`]: subjectAvg,
+        [`subjectPositions.${subj}`]: sp
+      });
+    });
+  });
+  await batch2.commit();
+}
+
+// ══ RESULTS VISIBILITY ══
+let _visibility = {}; // { 'Basic 5': true, 'Nursery 1': false, ... }
+
+async function loadVisibility() {
+  try {
+    const snap = await db.collection('settings').doc('resultsVisibility').get();
+    _visibility = snap.exists ? (snap.data() || {}) : {};
+  } catch(e) { _visibility = {}; }
+  renderVisibilityToggles();
+}
+
+function renderVisibilityToggles() {
+  const container = document.getElementById('visibilityToggles');
+  if (!container) return;
+  container.innerHTML = CLASSES.map(cls => {
+    const isOn = _visibility[cls] !== false; // default ON if not set
+    return `
+      <div class="vis-toggle-row">
+        <div>
+          <div class="cls-label">${cls}</div>
+          <div class="vis-status ${isOn?'on':'off'}" id="vis-status-${cls.replace(/\s/g,'-')}">${isOn ? 'Visible' : 'Hidden'}</div>
+        </div>
+        <label class="toggle-switch" title="${cls} results visibility">
+          <input type="checkbox" ${isOn?'checked':''} onchange="toggleVisibility('${cls}', this.checked)"/>
+          <span class="toggle-track"></span>
+        </label>
+      </div>`;
+  }).join('');
+}
+
+async function toggleVisibility(cls, isOn) {
+  _visibility[cls] = isOn;
+  const statusEl = document.getElementById(`vis-status-${cls.replace(/\s/g,'-')}`);
+  if (statusEl) {
+    statusEl.textContent = isOn ? 'Visible' : 'Hidden';
+    statusEl.className   = `vis-status ${isOn ? 'on' : 'off'}`;
+  }
+  try {
+    await db.collection('settings').doc('resultsVisibility').set(_visibility);
+    showToast(`${cls} results ${isOn ? 'visible to students' : 'hidden from students'}.`);
+  } catch(e) { showToast('Error saving visibility.','error'); console.error(e); }
+}
+
+async function setAllVisibility(isOn) {
+  CLASSES.forEach(c => { _visibility[c] = isOn; });
+  try {
+    await db.collection('settings').doc('resultsVisibility').set(_visibility);
+    renderVisibilityToggles();
+    showToast(`All results ${isOn ? 'visible' : 'hidden'}.`);
+  } catch(e) { showToast('Error saving visibility.','error'); }
+}
+
+// ══ SUBJECTS MANAGER ══
+let _currentSubjectClass = '';
+let _currentSubjects = [];
+
+async function loadSubjectsForClass() {
+  const cls = document.getElementById('subjectClass').value;
+  const card = document.getElementById('subjectManagerCard');
+  if (!cls) { card.style.display='none'; return; }
+  _currentSubjectClass = cls;
+  card.style.display='block';
+  document.getElementById('subjectManagerTitle').textContent = `${cls} — Subjects`;
+  document.getElementById('newSubjectInput').value = '';
+  invalidateSubjectsCache(cls);
+  _currentSubjects = await getSubjectsForClass(cls);
+  renderSubjectList();
+}
+
+function renderSubjectList() {
+  const list  = document.getElementById('subjectList');
+  const empty = document.getElementById('subjectEmptyState');
+  if (!_currentSubjects.length) {
+    list.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+  list.innerHTML = _currentSubjects.map((s, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+      <span style="font-weight:500;font-size:.93rem;">${i+1}. ${s}</span>
+      <button class="btn btn-danger btn-sm" onclick="removeSubject('${s.replace(/'/g,"\\'")}')">
+        <svg class="icon-svg" aria-hidden="true"><use href="#ic-trash"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+async function addSubject() {
+  const input = document.getElementById('newSubjectInput');
+  const name  = input.value.trim();
+  if (!name) return showToast('Enter a subject name.','error');
+  if (!_currentSubjectClass) return showToast('Select a class first.','error');
+
+  // Duplicate check — case-insensitive
+  const duplicate = _currentSubjects.some(s => s.toLowerCase() === name.toLowerCase());
+  if (duplicate) {
+    showToast(`"${name}" is already added to ${_currentSubjectClass}.`, 'error');
+    return;
+  }
+
+  const updated = [..._currentSubjects, name].sort((a,b) => a.localeCompare(b));
+  try {
+    await db.collection('subjects').doc(_currentSubjectClass).set({ subjects: updated });
+    invalidateSubjectsCache(_currentSubjectClass);
+    _currentSubjects = updated;
+    input.value = '';
+    renderSubjectList();
+    showToast(`"${name}" added to ${_currentSubjectClass}.`);
+  } catch(e) { showToast('Error saving subject.','error'); console.error(e); }
+}
+
+async function removeSubject(name) {
+  if (!confirm(`Remove "${name}" from ${_currentSubjectClass}? This will not delete existing results.`)) return;
+  const updated = _currentSubjects.filter(s => s !== name);
+  try {
+    await db.collection('subjects').doc(_currentSubjectClass).set({ subjects: updated });
+    invalidateSubjectsCache(_currentSubjectClass);
+    _currentSubjects = updated;
+    renderSubjectList();
+    showToast(`"${name}" removed.`);
+  } catch(e) { showToast('Error removing subject.','error'); console.error(e); }
+}
+
+// ══ HELPERS ══
+function sanitize(str) { return str.replace(/[\s&\/]/g,'_').toLowerCase(); }
+function openModal(id)  { document.getElementById(id).style.display='flex'; }
+function closeModal(id) { document.getElementById(id).style.display='none'; }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.style.display='none'; }));
+function adminLogout() { auth.signOut(); sessionStorage.clear(); window.location.href='index.html'; }
+
+init();
+</script>
+
+<!-- Admin Mobile Nav -->
+<div class="admin-mobile-nav" id="adminMobileNav">
+  <a onclick="switchTab('students')" id="mnav-students" class="active"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg></span>Students</a>
+  <a onclick="switchTab('results')" id="mnav-results"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span>Results</a>
+  <a onclick="switchTab('subjects')" id="mnav-subjects"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg></span>Subjects</a>
+  <a onclick="switchTab('scheme')" id="mnav-scheme"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span>Scheme</a>
+  <a onclick="switchTab('announcements')" id="mnav-ann"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span>News</a>
+  <a href="notes.html" id="mnav-notes"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span>Notes</a>
+</div>
+</body>
+</html>

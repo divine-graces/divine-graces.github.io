@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Lesson Notes — Divine Grace School Admin</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .notes-layout{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+    .notes-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-sm);overflow:hidden;position:sticky;top:20px}
+    .notes-panel__header{background:var(--primary);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+    .notes-panel__header h3{color:#fff;margin:0;font-size:.95rem}
+    .notes-filter{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+    .notes-list{max-height:calc(100vh - 300px);overflow-y:auto}
+    .note-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+    .note-item:hover{background:#f4f7fb}
+    .note-item.active{background:#e8f0fb;border-left:3px solid var(--primary)}
+    .note-item:last-child{border-bottom:none}
+    .note-item__title{font-weight:600;font-size:.88rem;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .note-item__meta{font-size:.74rem;color:var(--text-muted);display:flex;gap:6px;flex-wrap:wrap}
+    .note-item__meta span{display:inline-flex;align-items:center;gap:3px}
+    .note-empty{padding:30px 16px;text-align:center;color:var(--text-muted);font-size:.85rem}
+
+    /* Editor panel */
+    .editor-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-sm);overflow:hidden}
+    .editor-toolbar{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+    .editor-toolbar h3{margin:0;font-size:1rem;color:var(--primary)}
+    .editor-body{padding:22px}
+    .editor-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+
+    /* Formatting bar */
+    .fmt-bar{display:flex;gap:4px;flex-wrap:wrap;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm) var(--r-sm) 0 0;padding:8px 10px;align-items:center}
+    .fmt-btn{padding:5px 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:.8rem;font-family:var(--font-b);cursor:pointer;color:var(--text);transition:all .15s}
+    .fmt-btn:hover,.fmt-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .fmt-sep{width:1px;background:var(--border);margin:0 4px;align-self:stretch}
+
+    /* Image toolbar button special */
+    .fmt-btn-img{position:relative;overflow:hidden}
+    .fmt-btn-img input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+
+    #noteEditor{width:100%;min-height:400px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);padding:16px;font-size:.92rem;font-family:var(--font-b);line-height:1.7;outline:none;color:var(--text);background:var(--surface);overflow-y:auto}
+    #noteEditor:focus{border-color:var(--primary)}
+    #noteEditor h1,#noteEditor h2,#noteEditor h3{color:var(--primary);margin:.5em 0 .3em}
+    #noteEditor ul,#noteEditor ol{padding-left:1.5em;margin:.4em 0}
+    #noteEditor table{border-collapse:collapse;width:100%;margin:.5em 0}
+    #noteEditor table td,#noteEditor table th{border:1px solid var(--border);padding:6px 10px;font-size:.88rem}
+    #noteEditor table th{background:var(--primary);color:#fff;font-weight:600}
+
+    /* Resizable images inside editor */
+    #noteEditor img{max-width:100%;height:auto;cursor:nwse-resize;border:2px solid transparent;border-radius:4px;display:block;margin:8px 0}
+    #noteEditor img.selected{border-color:var(--primary)}
+    #noteEditor img.resizing{opacity:.8}
+
+    /* View mode */
+    .note-view{padding:22px;font-size:.92rem;line-height:1.8;min-height:300px;color:var(--text)}
+    .note-view h1,.note-view h2,.note-view h3{color:var(--primary);margin:.6em 0 .3em;font-family:var(--font-h)}
+    .note-view ul,.note-view ol{padding-left:1.6em;margin:.4em 0}
+    .note-view table{border-collapse:collapse;width:100%;margin:.6em 0}
+    .note-view table td,.note-view table th{border:1px solid var(--border);padding:7px 12px;font-size:.88rem}
+    .note-view table th{background:var(--primary);color:#fff;font-weight:600}
+    .note-view strong{color:var(--primary)}
+    .note-view img{max-width:100%;height:auto;border-radius:4px;margin:8px 0;display:block}
+
+    /* Placeholder */
+    .editor-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:320px;color:var(--text-muted);text-align:center;padding:40px}
+    .editor-placeholder .icon{margin-bottom:12px;opacity:.4}
+    .editor-placeholder .icon svg{width:3rem;height:3rem}
+
+    /* Badges */
+    .note-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:700;background:var(--primary);color:#fff;margin-right:4px}
+    .note-badge--term{background:var(--accent)}
+    .note-badge--subject{background:#2e7d32}
+
+    .delete-confirm{background:#fdecea;border:1px solid #f5c6cb;border-radius:var(--r-sm);padding:12px 16px;margin-top:14px;display:none;align-items:center;justify-content:space-between;gap:12px}
+    .delete-confirm.show{display:flex}
+    .delete-confirm p{margin:0;font-size:.88rem;color:var(--danger);font-weight:500}
+
+    /* Paste image highlight */
+    #noteEditor.drag-over{border-color:var(--primary);background:#f0f7ff}
+
+    /* Admin mobile nav */
+    .admin-mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--primary);border-top:1px solid rgba(255,255,255,.15);padding:6px 0;z-index:200;box-shadow:0 -2px 10px rgba(0,0,0,.2)}
+    .admin-mobile-nav a{flex:1;display:flex;flex-direction:column;align-items:center;font-size:.65rem;color:rgba(255,255,255,.7);text-decoration:none;padding:5px 0;cursor:pointer}
+    .admin-mobile-nav a .icon{font-size:1.2rem;margin-bottom:1px}
+    .admin-mobile-nav a.active{color:#fff}
+    @media(max-width:900px){.notes-layout{grid-template-columns:1fr}.notes-panel{position:static}.notes-list{max-height:240px}.editor-fields{grid-template-columns:1fr 1fr}}
+    @media(max-width:768px){.sidebar{display:none}.admin-mobile-nav{display:flex}.main-content{padding:14px;padding-bottom:75px}}
+    @media(max-width:600px){.editor-fields{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<!-- ══ SVG ICON SPRITE ══ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;" aria-hidden="true">
+  <symbol id="ic-home" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></symbol>
+  <symbol id="ic-chart" viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></symbol>
+  <symbol id="ic-book-open" viewBox="0 0 24 24"><path d="M2 3h7a4 4 0 014 4v14a3 3 0 00-3-3H2V3z"/><path d="M22 3h-7a4 4 0 00-4 4v14a3 3 0 013-3h8V3z"/></symbol>
+  <symbol id="ic-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></symbol>
+  <symbol id="ic-megaphone" viewBox="0 0 24 24"><path d="M18 8a4 4 0 010 8"/><path d="M21 5a7 7 0 010 14"/><path d="M3 9h4l7-5v16l-7-5H3a1 1 0 01-1-1v-4a1 1 0 011-1z"/><line x1="7" y1="9" x2="7" y2="15"/></symbol>
+  <symbol id="ic-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+  <symbol id="ic-notes" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></symbol>
+  <symbol id="ic-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></symbol>
+  <symbol id="ic-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></symbol>
+  <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="ic-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="ic-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></symbol>
+  <symbol id="ic-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+  <symbol id="ic-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="ic-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+</svg>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar__logo">
+      <img src="logo.png" alt="Logo" onerror="this.style.display='none'"/>
+      <div class="name">Admin Panel</div>
+    </div>
+    <nav>
+      <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg></span> Students</a>
+      <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span> Results</a>
+      <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span> Scheme of Work</a>
+      <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span> Announcements</a>
+      <a href="notes.html" class="active"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span> Lesson Notes</a>
+    </nav>
+    <div class="sidebar__footer">
+      <button class="btn btn-danger btn-full btn-sm" onclick="adminLogout()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-logout"/></svg> Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading notes...</div>
+    </div>
+
+    <div class="page-title">
+      <h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg> Lesson Notes</h1>
+      <p>One note per class, subject and term — admin only</p>
+    </div>
+
+    <div class="notes-layout">
+      <!-- LEFT: Note list -->
+      <div class="notes-panel">
+        <div class="notes-panel__header">
+          <h3>All Notes</h3>
+          <button class="btn btn-sm" onclick="openNew()" style="background:var(--accent);color:#fff;padding:5px 12px;font-size:.78rem;">
+            <svg class="icon-svg" aria-hidden="true"><use href="#ic-plus"/></svg> New
+          </button>
+        </div>
+        <div class="notes-filter">
+          <select class="form-control" id="filterClass" onchange="applyFilters()" style="font-size:.82rem;">
+            <option value="">All Classes</option>
+          </select>
+          <select class="form-control" id="filterSubject" onchange="applyFilters()" style="font-size:.82rem;">
+            <option value="">All Subjects</option>
+          </select>
+          <select class="form-control" id="filterTerm" onchange="applyFilters()" style="font-size:.82rem;">
+            <option value="">All Terms</option>
+            <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+          </select>
+        </div>
+        <div class="notes-list" id="notesList">
+          <div class="note-empty">No notes yet. Click + New to create one.</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Editor / Viewer -->
+      <div class="editor-panel" id="editorPanel">
+
+        <!-- Placeholder -->
+        <div class="editor-placeholder" id="editorPlaceholder">
+          <div class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></div>
+          <h3>No Note Selected</h3>
+          <p>Select a note or click <strong>+ New</strong> to create one.</p>
+        </div>
+
+        <!-- View Mode -->
+        <div id="viewMode" style="display:none;">
+          <div class="editor-toolbar">
+            <div>
+              <h3 id="viewTitle">—</h3>
+              <div style="margin-top:5px;" id="viewBadges"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-outline btn-sm" onclick="enterEditMode()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg> Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="showDeleteConfirm()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-trash"/></svg> Delete</button>
+            </div>
+          </div>
+          <div id="viewMeta" style="padding:10px 22px;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--text-muted);"></div>
+          <div class="note-view" id="noteViewBody"></div>
+          <div class="delete-confirm" id="deleteConfirm">
+            <p><svg class="icon-svg" aria-hidden="true"><use href="#ic-info"/></svg> Delete this note? This cannot be undone.</p>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-danger btn-sm" onclick="deleteNote()">Yes, Delete</button>
+              <button class="btn btn-outline btn-sm" onclick="hideDeleteConfirm()">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit / New Mode -->
+        <div id="editMode" style="display:none;">
+          <div class="editor-toolbar">
+            <h3 id="editModeTitle">New Note</h3>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="saveNote()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-save"/></svg> Save</button>
+              <button class="btn btn-outline btn-sm" onclick="cancelEdit()">Cancel</button>
+            </div>
+          </div>
+          <div class="editor-body">
+            <!-- Meta fields: Class · Subject · Term -->
+            <div class="editor-fields">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Class</label>
+                <select class="form-control" id="noteClass" onchange="populateSubjectDropdown()">
+                  <option value="">— Select Class —</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Subject</label>
+                <select class="form-control" id="noteSubject">
+                  <option value="">— Select Subject —</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Term</label>
+                <select class="form-control" id="noteTerm">
+                  <option value="">— Select Term —</option>
+                  <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Formatting toolbar -->
+            <div class="fmt-bar">
+              <button class="fmt-btn" onclick="fmt('bold')" title="Bold"><strong>B</strong></button>
+              <button class="fmt-btn" onclick="fmt('italic')" title="Italic"><em>I</em></button>
+              <button class="fmt-btn" onclick="fmt('underline')" title="Underline"><u>U</u></button>
+              <div class="fmt-sep"></div>
+              <button class="fmt-btn" onclick="fmtBlock('h2')" title="Heading">H2</button>
+              <button class="fmt-btn" onclick="fmtBlock('h3')" title="Subheading">H3</button>
+              <button class="fmt-btn" onclick="fmtBlock('p')" title="Paragraph">¶</button>
+              <div class="fmt-sep"></div>
+              <button class="fmt-btn" onclick="fmt('insertUnorderedList')" title="Bullet list">• List</button>
+              <button class="fmt-btn" onclick="fmt('insertOrderedList')" title="Numbered list">1. List</button>
+              <div class="fmt-sep"></div>
+              <button class="fmt-btn" onclick="insertTable()" title="Insert table">⊞ Table</button>
+              <button class="fmt-btn" onclick="insertDivider()" title="Divider">— Line</button>
+              <div class="fmt-sep"></div>
+              <!-- Image upload button -->
+              <label class="fmt-btn fmt-btn-img" title="Insert image from device">
+                <svg class="icon-svg" aria-hidden="true"><use href="#ic-image"/></svg> Image
+                <input type="file" accept="image/*" multiple onchange="insertImagesFromFiles(this.files)"/>
+              </label>
+              <div class="fmt-sep"></div>
+              <button class="fmt-btn" onclick="fmt('removeFormat')" title="Clear formatting"><svg class="icon-svg" aria-hidden="true"><use href="#ic-x"/></svg> Clear</button>
+            </div>
+
+            <!-- Content editable area -->
+            <div id="noteEditor" contenteditable="true" spellcheck="true"
+                 data-placeholder="Start typing your lesson note here...
+You can also paste or drag images directly into this area."></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Mobile Nav -->
+<div class="admin-mobile-nav">
+  <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg></span>Students</a>
+  <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span>Results</a>
+  <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span>Scheme</a>
+  <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span>News</a>
+  <a href="notes.html" class="active"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span>Notes</a>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+  if (sessionStorage.getItem('adminLoggedIn') !== 'true') window.location.href = 'index.html';
+
+  let allNotes      = [];
+  let filteredNotes = [];
+  let activeNoteId  = null;
+
+  // ══ INIT ══
+  async function init() {
+    auth.onAuthStateChanged(u => { if (!u) window.location.href = 'index.html'; });
+
+    CLASSES.forEach(c => {
+      ['filterClass','noteClass'].forEach(id => {
+        const el = document.getElementById(id);
+        const o  = document.createElement('option');
+        o.value = c; o.textContent = c;
+        el.appendChild(o);
+      });
+    });
+
+    // Populate filter subject from Firestore subjects collection
+    try {
+      const subSnap = await db.collection('subjects').get();
+      const allSubjects = [...new Set(subSnap.docs.flatMap(d => d.data().subjects || []))].sort();
+      const fSubj = document.getElementById('filterSubject');
+      allSubjects.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s; o.textContent = s;
+        fSubj.appendChild(o);
+      });
+    } catch(e) { console.warn('Could not load subjects for filter:', e); }
+
+    await loadNotes();
+    setupImageHandlers();
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+
+  // ══ LOAD NOTES ══
+  async function loadNotes() {
+    try {
+      const snap = await db.collection('lesson_notes').orderBy('updatedAt','desc').get();
+      allNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      applyFilters();
+    } catch(e) { console.error(e); }
+  }
+
+  // ══ FILTERS ══
+  function applyFilters() {
+    const cls     = document.getElementById('filterClass').value;
+    const subject = document.getElementById('filterSubject').value;
+    const term    = document.getElementById('filterTerm').value;
+    filteredNotes = allNotes.filter(n =>
+      (!cls     || n.className === cls) &&
+      (!subject || n.subject   === subject) &&
+      (!term    || n.term      === term)
+    );
+    renderNoteList();
+  }
+
+  // ══ RENDER LIST ══
+  function renderNoteList() {
+    const container = document.getElementById('notesList');
+    if (!filteredNotes.length) {
+      container.innerHTML = '<div class="note-empty">No notes match your filters.</div>';
+      return;
+    }
+    container.innerHTML = filteredNotes.map(n => {
+      const date = n.updatedAt?.toDate
+        ? n.updatedAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
+        : '';
+      return `
+        <div class="note-item ${n.id === activeNoteId ? 'active' : ''}" onclick="selectNote('${n.id}')">
+          <div class="note-item__title">${n.className} · ${n.subject}</div>
+          <div class="note-item__meta">
+            <span><svg class="icon-svg" aria-hidden="true"><use href="#ic-calendar"/></svg> ${n.term || '—'}</span>
+            <span><svg class="icon-svg" aria-hidden="true"><use href="#ic-clock"/></svg> ${date}</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ══ SELECT NOTE (VIEW MODE) ══
+  function selectNote(id) {
+    activeNoteId = id;
+    const note = allNotes.find(n => n.id === id);
+    if (!note) return;
+    renderNoteList();
+
+    document.getElementById('viewTitle').textContent = `${note.className} · ${note.subject} · ${note.term}`;
+    document.getElementById('viewBadges').innerHTML =
+      `<span class="note-badge">${note.className}</span>` +
+      `<span class="note-badge note-badge--subject">${note.subject}</span>` +
+      `<span class="note-badge note-badge--term">${note.term}</span>`;
+
+    const date = note.updatedAt?.toDate
+      ? note.updatedAt.toDate().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
+      : '';
+    document.getElementById('viewMeta').textContent = date ? `Last updated: ${date}` : '';
+    document.getElementById('noteViewBody').innerHTML = note.content || '<em style="color:var(--text-muted);">No content.</em>';
+    hideDeleteConfirm();
+    showView();
+  }
+
+  // ══ NEW NOTE ══
+  function openNew() {
+    activeNoteId = null;
+    document.getElementById('editModeTitle').textContent = 'New Note';
+    document.getElementById('noteClass').value   = '';
+    document.getElementById('noteSubject').innerHTML = '<option value="">— Select Subject —</option>';
+    document.getElementById('noteTerm').value    = '';
+    document.getElementById('noteEditor').innerHTML = '';
+    renderNoteList();
+    showEdit();
+  }
+
+  // ══ ENTER EDIT MODE (existing note) ══
+  function enterEditMode() {
+    const note = allNotes.find(n => n.id === activeNoteId);
+    if (!note) return;
+    document.getElementById('editModeTitle').textContent = 'Edit Note';
+    document.getElementById('noteClass').value  = note.className || '';
+    populateSubjectDropdown().then(() => {
+      document.getElementById('noteSubject').value = note.subject || '';
+    });
+    document.getElementById('noteTerm').value   = note.term || '';
+    document.getElementById('noteEditor').innerHTML = note.content || '';
+    showEdit();
+  }
+
+  // ══ SAVE NOTE ══
+  // Doc ID is deterministic: className_subject_term so opening the same
+  // combination always loads/overwrites the same document.
+  async function saveNote() {
+    const cls     = document.getElementById('noteClass').value;
+    const subject = document.getElementById('noteSubject').value;
+    const term    = document.getElementById('noteTerm').value;
+    const content = document.getElementById('noteEditor').innerHTML.trim();
+
+    if (!cls)     return showToast('Select a class.','error');
+    if (!subject) return showToast('Select a subject.','error');
+    if (!term)    return showToast('Select a term.','error');
+    if (!content || content === '<br>') return showToast('Note content is empty.','error');
+
+    const docId = `${cls}_${subject}_${term}`.replace(/[\s\/&]/g,'_');
+    const data  = {
+      className: cls, subject, term, content,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    try {
+      const ref  = db.collection('lesson_notes').doc(docId);
+      const snap = await ref.get();
+      if (!snap.exists) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await ref.set(data, { merge: true });
+      activeNoteId = docId;
+      showToast('Note saved!');
+      await loadNotes();
+      selectNote(activeNoteId);
+    } catch(e) {
+      showToast('Error saving note.','error');
+      console.error(e);
+    }
+  }
+
+  // ══ DELETE ══
+  function showDeleteConfirm()  { document.getElementById('deleteConfirm').classList.add('show'); }
+  function hideDeleteConfirm()  { document.getElementById('deleteConfirm').classList.remove('show'); }
+  async function deleteNote() {
+    if (!activeNoteId) return;
+    try {
+      await db.collection('lesson_notes').doc(activeNoteId).delete();
+      showToast('Note deleted.');
+      activeNoteId = null;
+      await loadNotes();
+      showPlaceholder();
+    } catch(e) { showToast('Error deleting note.','error'); }
+  }
+
+  // ══ CANCEL EDIT ══
+  function cancelEdit() {
+    if (activeNoteId) selectNote(activeNoteId);
+    else showPlaceholder();
+  }
+
+  // ══ SUBJECT DROPDOWN ══
+  async function populateSubjectDropdown() {
+    const cls  = document.getElementById('noteClass').value;
+    const sel  = document.getElementById('noteSubject');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">— Select Subject —</option>';
+    if (!cls) return;
+    const subjects = await getSubjectsForClass(cls);
+    subjects.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      sel.appendChild(o);
+    });
+    if (prev) sel.value = prev;
+  }
+
+  // ══ FORMATTING ══
+  function fmt(cmd) { document.getElementById('noteEditor').focus(); document.execCommand(cmd, false, null); }
+  function fmtBlock(tag) { document.getElementById('noteEditor').focus(); document.execCommand('formatBlock', false, tag); }
+
+  function insertTable() {
+    const rows = prompt('Number of rows (e.g. 3):','3');
+    const cols = prompt('Number of columns (e.g. 3):','3');
+    if (!rows||!cols) return;
+    let html = '<table><thead><tr>';
+    for (let c=0;c<parseInt(cols);c++) html+=`<th>Header ${c+1}</th>`;
+    html+='</tr></thead><tbody>';
+    for (let r=0;r<parseInt(rows)-1;r++) {
+      html+='<tr>';
+      for (let c=0;c<parseInt(cols);c++) html+='<td>&nbsp;</td>';
+      html+='</tr>';
+    }
+    html+='</tbody></table><p></p>';
+    document.getElementById('noteEditor').focus();
+    document.execCommand('insertHTML',false,html);
+  }
+
+  function insertDivider() {
+    document.getElementById('noteEditor').focus();
+    document.execCommand('insertHTML',false,'<hr style="border:none;border-top:2px solid #1a3a5c;margin:12px 0;"/><p></p>');
+  }
+
+  // ══ IMAGE HANDLING ══
+  // Convert a File or Blob to base64 data URL
+  function fileToDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = e => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Insert one or more image files into the editor at cursor position
+  async function insertImagesFromFiles(files) {
+    const editor = document.getElementById('noteEditor');
+    editor.focus();
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+      try {
+        const dataUrl = await fileToDataURL(file);
+        insertImageDataUrl(dataUrl);
+      } catch(e) { showToast('Could not read image file.','error'); }
+    }
+    // Reset file input so same file can be selected again
+    const input = document.querySelector('.fmt-btn-img input');
+    if (input) input.value = '';
+  }
+
+  // Insert a base64 image at cursor and make it resizable
+  function insertImageDataUrl(dataUrl) {
+    const editor = document.getElementById('noteEditor');
+    editor.focus();
+    const imgHtml = `<img src="${dataUrl}" style="width:480px;max-width:100%;display:block;margin:8px 0;" draggable="false"/>`;
+    document.execCommand('insertHTML', false, imgHtml + '<p></p>');
+    // Attach resize handles to any newly inserted image
+    setTimeout(() => attachResizeToImages(), 100);
+  }
+
+  // Make images resizable by dragging their bottom-right corner
+  function attachResizeToImages() {
+    const editor = document.getElementById('noteEditor');
+    editor.querySelectorAll('img').forEach(img => {
+      if (img._resizeAttached) return;
+      img._resizeAttached = true;
+
+      img.addEventListener('mousedown', e => {
+        // Only resize when clicking near bottom-right corner (within 20px)
+        const rect = img.getBoundingClientRect();
+        const nearRight  = e.clientX > rect.right  - 20;
+        const nearBottom = e.clientY > rect.bottom - 20;
+        if (!nearRight || !nearBottom) return;
+
+        e.preventDefault();
+        const startX = e.clientX;
+        const startW = img.offsetWidth;
+        img.classList.add('resizing');
+
+        function onMove(ev) {
+          const newW = Math.max(60, startW + (ev.clientX - startX));
+          img.style.width = newW + 'px';
+        }
+        function onUp() {
+          img.classList.remove('resizing');
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      // Show resize cursor near bottom-right corner
+      img.addEventListener('mousemove', e => {
+        const rect = img.getBoundingClientRect();
+        const nearCorner = e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20;
+        img.style.cursor = nearCorner ? 'nwse-resize' : 'default';
+      });
+
+      img.addEventListener('click', e => {
+        editor.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+        img.classList.add('selected');
+        e.stopPropagation();
+      });
+    });
+
+    // Click outside deselects
+    editor.addEventListener('click', e => {
+      if (e.target.tagName !== 'IMG') {
+        editor.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+      }
+    });
+  }
+
+  // ══ PASTE & DRAG-DROP IMAGE SUPPORT ══
+  function setupImageHandlers() {
+    const editor = document.getElementById('noteEditor');
+
+    // Paste handler — intercept image items from clipboard
+    editor.addEventListener('paste', async e => {
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItems = items.filter(item => item.type.startsWith('image/'));
+      if (!imageItems.length) return; // let normal paste proceed
+      e.preventDefault();
+      for (const item of imageItems) {
+        const file = item.getAsFile();
+        if (!file) continue;
+        const dataUrl = await fileToDataURL(file);
+        insertImageDataUrl(dataUrl);
+      }
+    });
+
+    // Drag-over
+    editor.addEventListener('dragover', e => {
+      e.preventDefault();
+      editor.classList.add('drag-over');
+    });
+    editor.addEventListener('dragleave', () => editor.classList.remove('drag-over'));
+
+    // Drop handler — accept image files dragged from desktop/file manager
+    editor.addEventListener('drop', async e => {
+      editor.classList.remove('drag-over');
+      const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith('image/'));
+      if (!files.length) return; // let browser handle non-image drops
+      e.preventDefault();
+      for (const file of files) {
+        const dataUrl = await fileToDataURL(file);
+        insertImageDataUrl(dataUrl);
+      }
+    });
+
+    // Attach resize to any images already in the editor (edit mode load)
+    editor.addEventListener('input', () => attachResizeToImages());
+  }
+
+  // ══ PANEL VISIBILITY ══
+  function showView() {
+    document.getElementById('editorPlaceholder').style.display='none';
+    document.getElementById('viewMode').style.display='block';
+    document.getElementById('editMode').style.display='none';
+  }
+  function showEdit() {
+    document.getElementById('editorPlaceholder').style.display='none';
+    document.getElementById('viewMode').style.display='none';
+    document.getElementById('editMode').style.display='block';
+    setTimeout(() => document.getElementById('noteEditor').focus(), 100);
+  }
+  function showPlaceholder() {
+    document.getElementById('editorPlaceholder').style.display='flex';
+    document.getElementById('viewMode').style.display='none';
+    document.getElementById('editMode').style.display='none';
+  }
+
+  function adminLogout() { auth.signOut(); sessionStorage.clear(); window.location.href='index.html'; }
+
+  init();
+</script>
+</body>
+</html>

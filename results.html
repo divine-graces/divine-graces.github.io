@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>My Results — Divine Grace School Portal</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .result-topbar{background:linear-gradient(135deg,var(--primary) 0%,#112844 100%);color:#fff;border-radius:var(--r-lg);padding:22px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .result-topbar h2{color:#fff;margin:0;font-size:1.3rem}
+    .result-topbar p{opacity:.75;font-size:.85rem;margin:2px 0 0}
+    .remarks-box{background:#f0f7ff;border:1px solid #cce3ff;border-radius:var(--r-sm);padding:16px 20px;margin-top:16px}
+    .remarks-box p{margin:4px 0;font-size:.88rem}
+    .remarks-box strong{color:var(--primary)}
+    .star-display span{font-size:1.1rem}
+    .trait-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:12px}
+    .trait-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border);font-size:.85rem}
+    .trait-label{font-weight:500;color:var(--text)}
+    .activity-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);font-size:.88rem}
+    .activity-row:last-child{border-bottom:none}
+
+    /* Print block hidden on screen */
+    #printBlock{display:none}
+
+    /* ══ PRINT ══ */
+    @media print {
+      @page{size:A4 portrait;margin:8mm 10mm}
+      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      .sidebar,.mobile-nav,.result-topbar,.history-selector,
+      .no-print,#resultContent,.loading-overlay{display:none!important}
+      body{background:#fff!important;font-size:9pt;font-family:Arial,sans-serif;color:#111}
+      .main-content{padding:0!important}
+      .app-layout{display:block!important}
+      #printBlock{display:block!important}
+    }
+
+    /* ══ Print block internal styles ══ */
+    #printBlock{font-family:Arial,sans-serif;font-size:9pt;color:#111}
+
+    /* Centred school header */
+    .pb-hdr{display:flex;flex-direction:column;align-items:center;text-align:center;border-bottom:2.5px solid #1a3a5c;padding-bottom:9px;margin-bottom:8px;gap:5px}
+    .pb-hdr img{width:72px;height:72px;border-radius:50%;border:2px solid #c8963e;object-fit:cover}
+    .pb-hdr h2{font-size:16pt;color:#1a3a5c;margin:2px 0 0;letter-spacing:.3px}
+    .pb-hdr .motto{font-size:9.5pt;color:#c8963e;font-style:italic;margin:1px 0}
+    .pb-hdr .tel{font-size:8pt;color:#555;margin:1px 0}
+    .pb-hdr .tl{font-weight:bold;color:#1a3a5c;font-size:9pt;margin-top:3px}
+
+    .pb-meta{width:100%;border-collapse:collapse;margin-bottom:7px;font-size:8.5pt}
+    .pb-meta td{padding:3.5px 7px;border:.5px solid #bbb}
+    .pb-meta td:nth-child(odd){font-weight:bold;background:#eef2f7;color:#1a3a5c}
+
+    .pb-sec{font-size:8pt;font-weight:bold;color:#fff;background:#1a3a5c;padding:3.5px 8px;margin:7px 0 4px;letter-spacing:.4px;text-transform:uppercase}
+
+    .pb-summary{display:flex;gap:6px;margin-bottom:6px}
+    .pb-sc{flex:1;border:.5px solid #bbb;border-radius:2px;padding:5px 6px;text-align:center}
+    .pb-sc .v{display:block;font-size:13pt;font-weight:bold;color:#1a3a5c;line-height:1.1}
+    .pb-sc .l{font-size:7pt;color:#888;text-transform:uppercase;letter-spacing:.2px}
+
+    .pb-tbl{width:100%;border-collapse:collapse;font-size:8pt;margin-bottom:6px}
+    .pb-tbl th{background:#1a3a5c;color:#fff;padding:4px 6px;text-align:left;font-size:7.5pt;text-transform:uppercase;letter-spacing:.2px}
+    .pb-tbl td{padding:3.5px 6px;border-bottom:.4px solid #ddd;vertical-align:middle}
+    .pb-tbl tr:nth-child(even) td{background:#f5f7fa}
+
+    .pb-g{display:inline-block;padding:1px 6px;border-radius:8px;font-weight:bold;font-size:7.5pt}
+    .pb-gA{background:#d4edda;color:#1a5c35}.pb-gB{background:#d1ecf1;color:#0c5460}
+    .pb-gC{background:#fff3cd;color:#7d5a00}.pb-gD{background:#ffe5d0;color:#7a3e00}
+    .pb-gE{background:#fde2e4;color:#6b1c24}.pb-gF{background:#f8d7da;color:#721c24}
+
+    .pb-traits{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px}
+    .pb-tc{border:.5px solid #ccc;border-radius:2px;padding:3px 6px;font-size:7.5pt;display:flex;justify-content:space-between;align-items:center}
+    .pb-stars{color:#c8963e;letter-spacing:.5px;font-size:8pt}
+
+    .pb-remark{border:.5px solid #ccc;border-radius:2px;padding:5px 8px;font-size:8.5pt;margin-bottom:5px}
+    .pb-remark b{color:#1a3a5c;display:block;margin-bottom:2px;font-size:8pt}
+
+    .pb-act{display:flex;justify-content:space-between;padding:3px 6px;border-bottom:.4px solid #eee;font-size:8pt}
+    .pb-act:last-child{border-bottom:none}
+    .pb-meta-info{border:.5px solid #ccc;border-radius:2px;margin-bottom:6px}
+  </style>
+</head>
+<body>
+<!-- ══ SVG ICON SPRITE ══ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;" aria-hidden="true">
+  <symbol id="ic-home" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></symbol>
+  <symbol id="ic-chart" viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></symbol>
+  <symbol id="ic-book-open" viewBox="0 0 24 24"><path d="M2 3h7a4 4 0 014 4v14a3 3 0 00-3-3H2V3z"/><path d="M22 3h-7a4 4 0 00-4 4v14a3 3 0 013-3h8V3z"/></symbol>
+  <symbol id="ic-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></symbol>
+  <symbol id="ic-megaphone" viewBox="0 0 24 24"><path d="M18 8a4 4 0 010 8"/><path d="M21 5a7 7 0 010 14"/><path d="M3 9h4l7-5v16l-7-5H3a1 1 0 01-1-1v-4a1 1 0 011-1z"/><line x1="7" y1="9" x2="7" y2="15"/></symbol>
+  <symbol id="ic-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+  <symbol id="ic-notes" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></symbol>
+  <symbol id="ic-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></symbol>
+  <symbol id="ic-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></symbol>
+  <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="ic-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="ic-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></symbol>
+  <symbol id="ic-print" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+  <symbol id="ic-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="ic-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></symbol>
+  <symbol id="ic-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></symbol>
+  <symbol id="ic-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="ic-chevron-up" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+</svg>
+
+<div class="app-layout">
+  <aside class="sidebar no-print">
+    <div class="sidebar__logo">
+      <img src="logo.png" alt="Logo" onerror="this.style.display='none'"/>
+      <div class="name">Divine Grace School</div>
+    </div>
+    <nav>
+      <a href="dashboard.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-home"/></svg></span> Dashboard</a>
+      <a href="results.html" class="active"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span> My Results</a>
+      <a href="scheme.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span> Scheme of Work</a>
+      <a href="announcements.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span> Announcements</a>
+    </nav>
+    <div class="sidebar__footer">
+      <button class="btn btn-full btn-sm" onclick="logout()" style="color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);background:transparent;cursor:pointer;">Logout</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading results...</div>
+    </div>
+
+    <!-- PRINT BLOCK — only visible when printing -->
+    <div id="printBlock"></div>
+
+    <!-- SCREEN UI -->
+    <div class="result-topbar no-print" id="resultTopbar" style="display:none;">
+      <div>
+        <h2 id="topbarName">My Results</h2>
+        <p id="topbarInfo"></p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-accent btn-sm" onclick="window.print()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-print"/></svg> Print Result</button>
+        <a href="dashboard.html" class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;">Back</a>
+      </div>
+    </div>
+
+    <div class="history-selector no-print" id="historySelector" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Session</label>
+        <select class="form-control" id="selSession" onchange="populateClasses()"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Class</label>
+        <select class="form-control" id="selClass" onchange="renderResult()"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Term</label>
+        <select class="form-control" id="selTerm" onchange="renderResult()">
+          <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="resultContent"></div>
+  </main>
+</div>
+
+<div class="mobile-nav no-print">
+  <a href="dashboard.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-home"/></svg></span>Home</a>
+  <a href="results.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span>Results</a>
+  <a href="scheme.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span>Scheme</a>
+  <a href="announcements.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span>News</a>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+  const studentId = sessionStorage.getItem('studentId');
+  if (!studentId) window.location.href = 'index.html';
+
+  let studentData = null;
+  let allResults  = [];
+
+  async function init() {
+    try {
+      const snap = await db.collection('students').doc(studentId).get();
+      if (!snap.exists) { logout(); return; }
+      studentData = snap.data();
+      document.getElementById('topbarName').textContent = studentData.fullName + "'s Results";
+      document.getElementById('topbarInfo').textContent = studentData.currentClass + ' · ID: ' + studentId;
+      document.getElementById('resultTopbar').style.display = 'flex';
+
+      // ── Visibility gate ──
+      const studentClass = studentData.currentClass;
+      try {
+        const visSnap = await db.collection('settings').doc('resultsVisibility').get();
+        const vis = visSnap.exists ? visSnap.data() : {};
+        // Default to visible if not set; hidden only when explicitly false
+        if (vis[studentClass] === false) {
+          document.getElementById('resultContent').innerHTML =
+            '<div class="empty-state">' +
+            '<div class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-inbox"/></svg></div>' +
+            '<h3>Results Not Yet Available</h3>' +
+            '<p>Results for your class have not been released yet. Please check back later.</p>' +
+            '</div>';
+          document.getElementById('historySelector').style.display = 'none';
+          document.getElementById('printBlock').innerHTML = '';
+          document.getElementById('loadingOverlay').style.display = 'none';
+          return;
+        }
+      } catch(e) { /* if settings fetch fails, allow results to show */ }
+
+      const rSnap = await db.collection('results').where('studentId','==',studentId).get();
+      allResults = rSnap.docs.map(d => d.data());
+
+      const sessions = [...new Set(allResults.map(r => r.session))].sort().reverse();
+      const selSess = document.getElementById('selSession');
+      selSess.innerHTML = sessions.length
+        ? sessions.map(s => '<option>'+s+'</option>').join('')
+        : '<option value="">No results available</option>';
+
+      populateClasses();
+      document.getElementById('historySelector').style.display = 'flex';
+      renderResult();
+      document.getElementById('loadingOverlay').style.display = 'none';
+    } catch(e) {
+      console.error(e);
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+  }
+
+  function populateClasses() {
+    const sess = document.getElementById('selSession').value;
+    const classes = [...new Set(allResults.filter(r => r.session===sess).map(r => r.className))].sort();
+    const selCls = document.getElementById('selClass');
+    selCls.innerHTML = classes.length ? classes.map(c => '<option>'+c+'</option>').join('') : '<option>—</option>';
+    renderResult();
+  }
+
+  function renderResult() {
+    const sess = document.getElementById('selSession').value;
+    const cls  = document.getElementById('selClass').value;
+    const term = document.getElementById('selTerm').value;
+    const r    = allResults.find(x => x.session===sess && x.className===cls && x.term===term);
+
+    if (!r) {
+      document.getElementById('resultContent').innerHTML = '<div class="empty-state"><div class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-inbox"/></svg></div><h3>No Result Found</h3><p>Results for this selection have not been uploaded yet.</p></div>';
+      document.getElementById('printBlock').innerHTML = '';
+      return;
+    }
+
+    if (isNurseryOrLowerPrimary(cls)) {
+      renderLowerScreen(r);
+      buildLowerPrint(r, sess, cls, term);
+    } else {
+      renderUpperScreen(r);
+      buildUpperPrint(r, sess, cls, term);
+    }
+  }
+
+  /* ── SCREEN: Lower ── */
+  async function renderLowerScreen(r) {
+    const subjects = await getSubjectsForClass(r.className);
+    const scores   = r.scores || {};
+    const traits   = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
+
+    const subRows = subjects.map(s => {
+      const sc  = scores[s] || {};
+      const ca1 = Number(sc.ca1||0), ca2 = Number(sc.ca2||0), exam = Number(sc.exam||0);
+      const total = computeTotal(ca1, ca2, exam);
+      const {grade,comment} = getGrade(total, r.className);
+      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[s]||'—')+'</td><td>'+(r.subjectLowest?.[s]||'—')+'</td><td>'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td><span class="badge badge-'+(grade||'F')+'">'+( grade||'F')+'</span></td><td style="color:var(--text-muted);font-size:.82rem;">'+comment+'</td></tr>';
+    }).join('');
+
+    const traitHTML = traits.map(t => {
+      const val = r.traits?.[t.replace(/\s+/g,'_').toLowerCase()]||0;
+      return '<div class="trait-row"><span class="trait-label">'+t+'</span><span class="star-display">'+starHTML(val)+'</span></div>';
+    }).join('');
+
+    const acts = (r.activities||[]).map(a => '<div class="activity-row"><span>'+a.name+'</span><span class="star-display">'+starHTML(a.rating)+'</span></div>').join('') || '<div style="padding:14px;color:var(--text-muted);font-size:.88rem;">No activities recorded.</div>';
+
+    document.getElementById('resultContent').innerHTML =
+      '<div class="stats-grid" style="margin-bottom:20px;">'+
+        '<div class="stat-card"><div class="stat-card__value">'+(r.average||'—')+'%</div><div class="stat-card__label">Average</div></div>'+
+        '<div class="stat-card stat-card--accent"><div class="stat-card__value">'+(r.overallPosition?'#'+r.overallPosition:'—')+'</div><div class="stat-card__label">Position</div></div>'+
+        '<div class="stat-card"><div class="stat-card__value">'+(r.classAverage||'—')+'%</div><div class="stat-card__label">Class Avg</div></div>'+
+        '<div class="stat-card stat-card--accent"><div class="stat-card__value">'+starHTML(r.conductRating||0)+'</div><div class="stat-card__label">Conduct</div></div>'+
+      '</div>'+
+      '<div class="info-grid" style="margin-bottom:20px;">'+
+        '<div class="info-item"><div class="info-item__label">Age at End of Term</div><div class="info-item__value">'+(r.ageAtEndOfTerm||'—')+' yrs</div></div>'+
+        '<div class="info-item"><div class="info-item__label">Days Attended</div><div class="info-item__value">'+(r.daysAttended||'—')+'</div></div>'+
+        '<div class="info-item"><div class="info-item__label">Days Absent</div><div class="info-item__value">'+(r.daysAbsent||'—')+'</div></div>'+
+        '<div class="info-item"><div class="info-item__label">Term Ending Date</div><div class="info-item__value">'+(r.termEndingDate||'—')+'</div></div>'+
+        '<div class="info-item"><div class="info-item__label">Next Term Resumption</div><div class="info-item__value">'+(r.resumptionDate||'—')+'</div></div>'+
+        '<div class="info-item"><div class="info-item__label">Status</div><div class="info-item__value" style="font-weight:700;color:'+(r.passFail==='Pass'?'var(--primary)':'var(--danger)')+'">'+(r.passFail||'—')+'</div></div>'+
+      '</div>'+
+      '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Subject Performance</h3></div><div class="table-wrapper"><table><thead><tr><th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th></tr></thead><tbody>'+subRows+'</tbody></table></div></div>'+
+      '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Character Assessment</h3></div><div class="card-body"><div class="trait-grid">'+traitHTML+'</div></div></div>'+
+      '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Extra-Curricular Activities</h3></div>'+acts+'</div>'+
+      '<div class="card"><div class="card-header"><h3>Remarks</h3></div><div class="card-body"><div class="remarks-box"><p><strong>Class Teacher ('+(r.teacherName||'—')+'):</strong> '+(r.teacherRemark||'—')+'</p><p style="margin-top:10px;"><strong>Head Teacher:</strong> '+(r.headTeacherRemark||'—')+'</p></div><div class="action-row no-print" style="margin-top:16px;"><button class="btn btn-primary" onclick="window.print()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-print"/></svg> Print Result</button></div></div></div>';
+  }
+
+  /* ── SCREEN: Upper ── */
+  function renderUpperScreen(r) {
+    const subjects = await getSubjectsForClass(r.className);
+    const scores   = r.scores||{};
+
+    const subRows = subjects.map(s => {
+      const sc = scores[s]||{};
+      const ca1=Number(sc.ca1||0), ca2=Number(sc.ca2||0), exam=Number(sc.exam||0);
+      const total = computeTotal(ca1,ca2,exam);
+      const {grade,comment} = getGrade(total, r.className);
+      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[s]||'—')+'</td><td>'+(r.subjectLowest?.[s]||'—')+'</td><td>'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td><span class="badge badge-'+grade+'">'+grade+'</span></td><td style="font-size:.8rem;color:var(--text-muted);">'+comment+'</td></tr>';
+    }).join('');
+
+    document.getElementById('resultContent').innerHTML =
+      '<div class="stats-grid" style="margin-bottom:20px;">'+
+        '<div class="stat-card"><div class="stat-card__value">'+(r.average||'—')+'%</div><div class="stat-card__label">Average</div></div>'+
+        '<div class="stat-card stat-card--accent"><div class="stat-card__value">'+(r.overallPosition?'#'+r.overallPosition:'—')+'</div><div class="stat-card__label">Position</div></div>'+
+        '<div class="stat-card"><div class="stat-card__value">'+(r.classAverage||'—')+'%</div><div class="stat-card__label">Class Avg</div></div>'+
+        '<div class="stat-card stat-card--'+(r.passFail==='Pass'?'success':'danger')+'"><div class="stat-card__value">'+(r.passFail||'—')+'</div><div class="stat-card__label">Status</div></div>'+
+      '</div>'+
+      '<div class="info-grid" style="margin-bottom:20px;">'+
+        '<div class="info-item"><div class="info-item__label">Age at End of Term</div><div class="info-item__value">'+(r.ageAtEndOfTerm||'—')+' yrs</div></div>'+
+        '<div class="info-item"><div class="info-item__label">Days in School</div><div class="info-item__value">'+(r.schoolDays||'—')+'</div></div>'+
+        '<div class="info-item"><div class="info-item__label">Days Attended</div><div class="info-item__value">'+(r.daysAttended||'—')+'</div></div>'+
+        '<div class="info-item"><div class="info-item__label">Class Average</div><div class="info-item__value">'+(r.classAverage||'—')+'%</div></div>'+
+      '</div>'+
+      '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Subject Results</h3></div><div class="table-wrapper"><table><thead><tr><th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th></tr></thead><tbody>'+subRows+'</tbody></table></div></div>'+
+      '<div class="card"><div class="card-header"><h3>Remarks</h3></div><div class="card-body"><div class="remarks-box"><p><strong>Class Teacher ('+(r.teacherName||'—')+'):</strong> '+(r.teacherRemark||'—')+'</p><p style="margin-top:10px;"><strong>Principal ('+(r.principalName||'—')+'):</strong> '+(r.principalRemark||'—')+'</p></div><div class="action-row no-print" style="margin-top:16px;"><button class="btn btn-primary" onclick="window.print()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-print"/></svg> Print Result</button></div></div></div>';
+  }
+
+  /* ── PRINT BUILDERS ── */
+  function pStars(n) { return '★'.repeat(n||0)+'☆'.repeat(5-(n||0)); }
+  function pGrade(g) { return '<span class="pb-g pb-g'+(g||'F')+'">'+( g||'F')+'</span>'; }
+
+  function buildLowerPrint(r, sess, cls, term) {
+    const subjects = await getSubjectsForClass(r.className);
+    const scores   = r.scores||{};
+    const traits   = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
+
+    const subRows = subjects.map(s => {
+      const sc  = scores[s]||{};
+      const ca1 = Number(sc.ca1||0), ca2 = Number(sc.ca2||0), exam = Number(sc.exam||0);
+      const total = computeTotal(ca1,ca2,exam);
+      const {grade,comment} = getGrade(total, r.className);
+      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
+    }).join('');
+
+    const traitCells = traits.map(t =>
+      '<div class="pb-tc"><span>'+t+'</span><span class="pb-stars">'+pStars(r.traits?.[t.replace(/\s+/g,'_').toLowerCase()]||0)+'</span></div>'
+    ).join('');
+
+    const actRows = (r.activities||[]).length
+      ? (r.activities).map(a => '<div class="pb-act"><span>'+a.name+'</span><span class="pb-stars">'+pStars(a.rating)+'</span></div>').join('')
+      : '';
+
+    const pColor = r.passFail==='Pass' ? '#1a5c35' : '#721c24';
+
+    document.getElementById('printBlock').innerHTML =
+      '<div class="pb-hdr"><img src="logo.png" alt=""/><h2>Divine Grace School</h2><div class="motto">Outstanding in Knowledge</div><div class="tel">Tel: 08035803613 &nbsp;|&nbsp; 09076906111</div><div class="tl">'+term+' Report Card &nbsp;·&nbsp; '+sess+'</div></div>'+
+      '<table class="pb-meta"><tr><td>Student Name</td><td>'+studentData.fullName+'</td><td>Student ID</td><td>'+studentId+'</td><td>Gender</td><td>'+studentData.gender+'</td></tr>'+
+      '<tr><td>Class</td><td>'+cls+'</td><td>Age at End of Term</td><td>'+(r.ageAtEndOfTerm||'—')+' yrs</td><td>Conduct</td><td><span class="pb-stars">'+pStars(r.conductRating||0)+'</span></td></tr>'+
+      '<tr><td>Days Attended</td><td>'+(r.daysAttended||'—')+'</td><td>Days Absent</td><td>'+(r.daysAbsent||'—')+'</td><td>Status</td><td style="font-weight:bold;color:'+pColor+'">'+(r.passFail||'—')+'</td></tr>'+
+      '<tr><td>Term Ends</td><td>'+(r.termEndingDate||'—')+'</td><td>Next Term Resumes</td><td colspan="3">'+(r.resumptionDate||'—')+'</td></tr></table>'+
+      '<div class="pb-summary">'+
+        '<div class="pb-sc"><span class="v">'+(r.average||'—')+'%</span><span class="l">Average</span></div>'+
+        '<div class="pb-sc"><span class="v">'+(r.overallPosition?'#'+r.overallPosition:'—')+'</span><span class="l">Position</span></div>'+
+        '<div class="pb-sc"><span class="v">'+(r.classAverage||'—')+'%</span><span class="l">Class Avg</span></div>'+
+        '<div class="pb-sc"><span class="v" style="color:'+pColor+'">'+(r.passFail||'—')+'</span><span class="l">Status</span></div>'+
+      '</div>'+
+      '<div class="pb-sec">Subject Performance</div>'+
+      '<table class="pb-tbl"><thead><tr><th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th></tr></thead><tbody>'+subRows+'</tbody></table>'+
+      '<div class="pb-sec">Character Assessment</div>'+
+      '<div class="pb-traits">'+traitCells+'</div>'+
+      (actRows ? '<div class="pb-sec">Extra-Curricular Activities</div><div class="pb-meta-info">'+actRows+'</div>' : '')+
+      '<div class="pb-sec">Remarks</div>'+
+      '<div class="pb-remark"><b>Class Teacher: '+(r.teacherName||'—')+'</b>'+(r.teacherRemark||'—')+'</div>'+
+      '<div class="pb-remark"><b>Head Teacher</b>'+(r.headTeacherRemark||'—')+'</div>';
+  }
+
+  function buildUpperPrint(r, sess, cls, term) {
+    const subjects = await getSubjectsForClass(r.className);
+    const scores   = r.scores||{};
+
+    const subRows = subjects.map(s => {
+      const sc = scores[s]||{};
+      const ca1=Number(sc.ca1||0), ca2=Number(sc.ca2||0), exam=Number(sc.exam||0);
+      const total = computeTotal(ca1,ca2,exam);
+      const {grade,comment} = getGrade(total, r.className);
+      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
+    }).join('');
+
+    const pColor = r.passFail==='Pass' ? '#1a5c35' : '#721c24';
+
+    document.getElementById('printBlock').innerHTML =
+      '<div class="pb-hdr"><img src="logo.png" alt=""/><h2>Divine Grace School</h2><div class="motto">Outstanding in Knowledge</div><div class="tel">Tel: 08035803613 &nbsp;|&nbsp; 09076906111</div><div class="tl">'+term+' Report Card &nbsp;·&nbsp; '+sess+'</div></div>'+
+      '<table class="pb-meta"><tr><td>Student Name</td><td>'+studentData.fullName+'</td><td>Student ID</td><td>'+studentId+'</td><td>Gender</td><td>'+studentData.gender+'</td></tr>'+
+      '<tr><td>Class</td><td>'+cls+'</td><td>Age at End of Term</td><td>'+(r.ageAtEndOfTerm||'—')+' yrs</td><td>Session</td><td>'+sess+'</td></tr>'+
+      '<tr><td>School Days</td><td>'+(r.schoolDays||'—')+'</td><td>Days Attended</td><td>'+(r.daysAttended||'—')+'</td><td>Status</td><td style="font-weight:bold;color:'+pColor+'">'+(r.passFail||'—')+'</td></tr></table>'+
+      '<div class="pb-summary">'+
+        '<div class="pb-sc"><span class="v">'+(r.average||'—')+'%</span><span class="l">Average</span></div>'+
+        '<div class="pb-sc"><span class="v">'+(r.overallPosition?'#'+r.overallPosition:'—')+'</span><span class="l">Position</span></div>'+
+        '<div class="pb-sc"><span class="v">'+(r.classAverage||'—')+'%</span><span class="l">Class Avg</span></div>'+
+        '<div class="pb-sc"><span class="v" style="color:'+pColor+'">'+(r.passFail||'—')+'</span><span class="l">Status</span></div>'+
+      '</div>'+
+      '<div class="pb-sec">Subject Results</div>'+
+      '<table class="pb-tbl"><thead><tr><th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th></tr></thead><tbody>'+subRows+'</tbody></table>'+
+      '<div class="pb-sec">Remarks</div>'+
+      '<div class="pb-remark"><b>Class Teacher: '+(r.teacherName||'—')+'</b>'+(r.teacherRemark||'—')+'</div>'+
+      '<div class="pb-remark"><b>Principal: '+(r.principalName||'—')+'</b>'+(r.principalRemark||'—')+'</div>';
+  }
+
+  function logout() { sessionStorage.clear(); window.location.href='index.html'; }
+  init();
+</script>
+</body>
+</html>
