@@ -304,7 +304,7 @@
       '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Subject Performance</h3></div><div class="table-wrapper"><table><thead><tr><th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th></tr></thead><tbody>'+subRows+'</tbody></table></div></div>'+
       '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Character Assessment</h3></div><div class="card-body"><div class="trait-grid">'+traitHTML+'</div></div></div>'+
       '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Extra-Curricular Activities</h3></div>'+acts+'</div>'+
-      '<div class="card"><div class="card-header"><h3>Remarks</h3></div><div class="card-body"><div class="remarks-box"><p><strong>Class Teacher ('+(r.teacherName||'—')+'):</strong> '+(r.teacherRemark||'—')+'</p><p style="margin-top:10px;"><strong>Head Teacher:</strong> '+(r.headTeacherRemark||'—')+'</p></div><div class="action-row no-print" style="margin-top:16px;"><button class="btn btn-primary" onclick="window.print()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-print"/></svg> Print Result</button></div></div></div>';
+      '<div class="card"><div class="card-header"><h3>Remarks</h3></div><div class="card-body"><div class="remarks-box"><p><strong>Class Teacher ('+(r.teacherName||'—')+'):</strong> '+(r.teacherRemark||'—')+'</p><p style="margin-top:10px;"><strong>Head Teacher ('+(r.headTeacherName||'—')+'):</strong> '+(r.headTeacherRemark||'—')+'</p></div><div class="action-row no-print" style="margin-top:16px;"><button class="btn btn-primary" onclick="window.print()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-print"/></svg> Print Result</button></div></div></div>';
   }
 
   /* ── SCREEN: Upper ── */
@@ -383,7 +383,7 @@
       (actRows ? '<div class="pb-sec">Extra-Curricular Activities</div><div class="pb-meta-info">'+actRows+'</div>' : '')+
       '<div class="pb-sec">Remarks</div>'+
       '<div class="pb-remark"><b>Class Teacher: '+(r.teacherName||'—')+'</b>'+(r.teacherRemark||'—')+'</div>'+
-      '<div class="pb-remark"><b>Head Teacher</b>'+(r.headTeacherRemark||'—')+'</div>';
+      '<div class="pb-remark"><b>Head Teacher: '+(r.headTeacherName||'—')+'</b>'+(r.headTeacherRemark||'—')+'</div>';
   }
 
   async function buildUpperPrint(r, sess, cls, term) {

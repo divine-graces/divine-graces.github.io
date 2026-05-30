@@ -479,7 +479,10 @@
 
       <!-- Remarks -->
       <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-message"/></svg> Remarks</div>
-      <div class="form-group"><label class="form-label">Teacher's Name</label><input class="form-control" id="lr_teacherName"/></div>
+      <div class="two-col">
+        <div class="form-group"><label class="form-label">Teacher's Name</label><input class="form-control" id="lr_teacherName"/></div>
+        <div class="form-group"><label class="form-label">Head Teacher's Name</label><input class="form-control" id="lr_headName"/></div>
+      </div>
       <div class="form-group"><label class="form-label">Teacher's Remark</label><textarea class="form-control" id="lr_teacherRemark" rows="2"></textarea></div>
       <div class="form-group"><label class="form-label">Head Teacher's Remark</label><textarea class="form-control" id="lr_headRemark" rows="2"></textarea></div>
     </div>
@@ -818,6 +821,7 @@ async function openLowerResultModal(studentId, className, studentName) {
       document.getElementById('lr_termEnd').value      = r.termEndingDate||'';
       document.getElementById('lr_resumption').value   = r.resumptionDate||'';
       document.getElementById('lr_teacherName').value  = r.teacherName||'';
+      document.getElementById('lr_headName').value      = r.headTeacherName||'';
       document.getElementById('lr_teacherRemark').value= r.teacherRemark||'';
       document.getElementById('lr_headRemark').value   = r.headTeacherRemark||'';
       if (r.traits) Object.entries(r.traits).forEach(([k,v]) => {
@@ -907,6 +911,7 @@ async function saveLowerResult() {
     termEndingDate:    document.getElementById('lr_termEnd').value,
     resumptionDate:    document.getElementById('lr_resumption').value,
     teacherName:       document.getElementById('lr_teacherName').value.trim(),
+    headTeacherName:   document.getElementById('lr_headName').value.trim(),
     teacherRemark:     document.getElementById('lr_teacherRemark').value.trim(),
     headTeacherRemark: document.getElementById('lr_headRemark').value.trim(),
     scores, traits, activities, average, passFail,
