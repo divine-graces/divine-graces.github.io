@@ -308,7 +308,7 @@
   }
 
   /* ── SCREEN: Upper ── */
-  function renderUpperScreen(r) {
+  async function renderUpperScreen(r) {
     const subjects = await getSubjectsForClass(r.className);
     const scores   = r.scores||{};
 
@@ -341,7 +341,7 @@
   function pStars(n) { return '★'.repeat(n||0)+'☆'.repeat(5-(n||0)); }
   function pGrade(g) { return '<span class="pb-g pb-g'+(g||'F')+'">'+( g||'F')+'</span>'; }
 
-  function buildLowerPrint(r, sess, cls, term) {
+  async function buildLowerPrint(r, sess, cls, term) {
     const subjects = await getSubjectsForClass(r.className);
     const scores   = r.scores||{};
     const traits   = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
@@ -386,7 +386,7 @@
       '<div class="pb-remark"><b>Head Teacher</b>'+(r.headTeacherRemark||'—')+'</div>';
   }
 
-  function buildUpperPrint(r, sess, cls, term) {
+  async function buildUpperPrint(r, sess, cls, term) {
     const subjects = await getSubjectsForClass(r.className);
     const scores   = r.scores||{};
 
