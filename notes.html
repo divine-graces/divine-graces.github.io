@@ -293,18 +293,53 @@ You can also paste or drag images directly into this area."></div>
   let filteredNotes = [];
   let activeNoteId  = null;
 
+  // ══ ROLE STATE ══
+  let currentRole      = null;
+  let currentClassName = null;
+
   // ══ INIT ══
   async function init() {
-    auth.onAuthStateChanged(u => { if (!u) window.location.href = 'index.html'; });
-
-    CLASSES.forEach(c => {
-      ['filterClass','noteClass'].forEach(id => {
-        const el = document.getElementById(id);
-        const o  = document.createElement('option');
-        o.value = c; o.textContent = c;
-        el.appendChild(o);
+    // Verify Firebase Auth + fetch role
+    await new Promise(resolve => {
+      auth.onAuthStateChanged(async user => {
+        if (!user) { window.location.href = 'index.html'; return; }
+        try {
+          const adminDoc = await db.collection('admins').doc(user.uid).get();
+          if (!adminDoc.exists) { auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html'; return; }
+          const data = adminDoc.data();
+          currentRole      = data.role || 'teacher';
+          currentClassName = data.className || null;
+          if (currentRole === 'teacher' && !currentClassName) {
+            auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html'; return;
+          }
+        } catch(e) { auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html'; return; }
+        resolve();
       });
     });
+
+    if (currentRole === 'teacher') {
+      // Teacher: lock class selects to their own class
+      ['filterClass','noteClass'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const o = document.createElement('option');
+        o.value = currentClassName; o.textContent = currentClassName;
+        el.appendChild(o);
+        el.value = currentClassName;
+        el.disabled = true;
+        el.style.opacity = '1';
+      });
+    } else {
+      // Head teacher: all classes
+      CLASSES.forEach(c => {
+        ['filterClass','noteClass'].forEach(id => {
+          const el = document.getElementById(id);
+          const o  = document.createElement('option');
+          o.value = c; o.textContent = c;
+          el.appendChild(o);
+        });
+      });
+    }
 
     // Populate filter subject from Firestore subjects collection
     try {
@@ -326,7 +361,13 @@ You can also paste or drag images directly into this area."></div>
   // ══ LOAD NOTES ══
   async function loadNotes() {
     try {
-      const snap = await db.collection('lesson_notes').orderBy('updatedAt','desc').get();
+      let query = db.collection('lesson_notes').orderBy('updatedAt','desc');
+      if (currentRole === 'teacher') {
+        query = db.collection('lesson_notes')
+          .where('className','==',currentClassName)
+          .orderBy('updatedAt','desc');
+      }
+      const snap = await query.get();
       allNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       applyFilters();
     } catch(e) { console.error(e); }

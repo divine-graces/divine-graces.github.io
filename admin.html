@@ -132,7 +132,10 @@
     <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text">Loading...</div></div>
 
     <div class="admin-topbar">
-      <div><h2><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg> Admin Dashboard</h2><p id="adminEmailLabel">Divine Grace School</p></div>
+      <div>
+        <h2 id="adminDashTitle"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg> Admin Dashboard</h2>
+        <p id="adminEmailLabel">Divine Grace School</p>
+      </div>
       <div style="font-size:.8rem;opacity:.7;">Session: <strong id="sessionLabel"></strong></div>
     </div>
 
@@ -541,24 +544,117 @@ let currentResultStudentId = null;
 let currentResultClassName = null;
 let studentModalStep = 'form'; // 'form' | 'confirm'
 
+// ══ ROLE STATE (set once during init, never mutated) ══
+let currentRole      = null;  // 'headteacher' | 'teacher'
+let currentClassName = null;  // e.g. 'Basic 3' — null for headteacher
+
 // ══ INIT ══
 async function init() {
-  auth.onAuthStateChanged(u => { if(!u) window.location.href='index.html'; else document.getElementById('adminEmailLabel').textContent = u.email; });
+  // Verify Firebase Auth session and fetch role from Firestore
+  await new Promise(resolve => {
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'index.html'; return; }
+
+      try {
+        const adminDoc = await db.collection('admins').doc(user.uid).get();
+        if (!adminDoc.exists) { auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html'; return; }
+
+        const data = adminDoc.data();
+        currentRole      = data.role || 'teacher';
+        currentClassName = data.className || null;
+
+        // Validate teacher has a className
+        if (currentRole === 'teacher' && !currentClassName) {
+          auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html'; return;
+        }
+
+        document.getElementById('adminEmailLabel').textContent = user.email;
+        applyRoleBadge();
+      } catch(e) {
+        console.error('Role fetch error:', e);
+        auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html';
+      }
+      resolve();
+    });
+  });
+
   document.getElementById('sessionLabel').textContent = getCurrentSession();
   document.getElementById('resultSession').value = getCurrentSession();
   document.getElementById('bulkSession').value   = getCurrentSession();
 
-  // Populate class selects
-  ['resultClass','schemeClass','sClass','subjectClass','bulkClass'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    CLASSES.forEach(c => { const o = document.createElement('option'); o.value=c; o.textContent=c; el.appendChild(o); });
-  });
+  if (currentRole === 'teacher') {
+    applyTeacherUI();
+  } else {
+    // Head teacher: populate all class selects normally
+    ['resultClass','schemeClass','sClass','subjectClass','bulkClass'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      CLASSES.forEach(c => { const o = document.createElement('option'); o.value=c; o.textContent=c; el.appendChild(o); });
+    });
+  }
 
   await loadAllStudents();
   await loadAnnouncementsAdmin();
   await loadVisibility();
   document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// ══ ROLE BADGE ══
+function applyRoleBadge() {
+  const topbar = document.querySelector('.admin-topbar h2');
+  if (!topbar) return;
+  const badge = currentRole === 'headteacher'
+    ? `<span style="font-size:.7rem;font-weight:700;background:#c8963e;color:#fff;padding:3px 10px;border-radius:12px;margin-left:10px;vertical-align:middle;">HEAD TEACHER</span>`
+    : `<span style="font-size:.7rem;font-weight:700;background:rgba(255,255,255,0.25);color:#fff;padding:3px 10px;border-radius:12px;margin-left:10px;vertical-align:middle;">${currentClassName}</span>`;
+  topbar.insertAdjacentHTML('beforeend', badge);
+}
+
+// ══ TEACHER UI ADJUSTMENTS ══
+function applyTeacherUI() {
+  const cls = currentClassName;
+
+  // 1. Class selects: set value and disable (single option, locked)
+  ['resultClass','schemeClass','sClass','subjectClass','bulkClass'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Replace with a locked display — single option only
+    el.innerHTML = '';
+    const o = document.createElement('option');
+    o.value = cls; o.textContent = cls; el.appendChild(o);
+    el.value = cls;
+    el.disabled = true;
+    el.style.opacity = '1';
+    el.style.background = 'var(--bg)';
+  });
+
+  // Hide the class selector wrapper in Subjects tab (no need for a label)
+  const subjectClassWrapper = document.getElementById('subjectClass')?.closest('.card');
+  if (subjectClassWrapper) subjectClassWrapper.style.display = 'none';
+
+  // Hide class selector row in Scheme tab
+  const schemeClassRow = document.getElementById('schemeClass')?.closest('.form-group');
+  if (schemeClassRow) schemeClassRow.style.display = 'none';
+
+  // Hide "Enable All / Disable All" buttons — teacher only controls their class
+  const visButtons = document.querySelector('.admin-topbar ~ * .card .card-header div[style*="display:flex;gap:8px"]');
+  // Fallback: hide by finding buttons containing "Enable All"
+  document.querySelectorAll('button').forEach(btn => {
+    if (btn.textContent.trim() === 'Enable All' || btn.textContent.trim() === 'Disable All') {
+      btn.style.display = 'none';
+    }
+  });
+
+  // Students tab: skip grid, go straight to class list
+  document.getElementById('classGridView').style.display    = 'none';
+  document.getElementById('classStudentView').style.display = 'block';
+  document.getElementById('classStudentTitle').textContent  = cls;
+  // Hide the "← All Classes" back button
+  const backBtn = document.querySelector('.class-back');
+  if (backBtn) backBtn.style.display = 'none';
+
+  // Trigger dependent loads that normally fire on dropdown change
+  loadSchemeSubjects();
+  loadSubjectsForClassTeacher();
 }
 
 // ══ TABS ══
@@ -570,15 +666,30 @@ function switchTab(tab) {
   document.getElementById('nav-'+tab).classList.add('active');
   const mn = document.getElementById('mnav-'+tab);
   if (mn) mn.classList.add('active');
+
+  // For teachers: auto-trigger data loads when switching tabs
+  if (currentRole === 'teacher') {
+    if (tab === 'results') loadResultStudents();
+    if (tab === 'subjects') loadSubjectsForClassTeacher();
+    if (tab === 'scheme')   loadSchemeSubjects();
+  }
 }
 
 // ══ STUDENTS ══
 let _activeClass = ''; // currently viewed class in students tab
 
 async function loadAllStudents() {
-  const snap = await db.collection('students').get();
+  let query = db.collection('students');
+  if (currentRole === 'teacher') {
+    query = query.where('currentClass', '==', currentClassName);
+  }
+  const snap = await query.get();
   allStudents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderClassGrid();
+  if (currentRole === 'headteacher') renderClassGrid();
+  else {
+    _activeClass = currentClassName;
+    renderStudentList();
+  }
 }
 
 function renderClassGrid() {
@@ -644,10 +755,18 @@ function openAddStudent() {
   document.getElementById('studentModalTitle').textContent = 'Add New Student';
   ['sFullName','sAge','sYear'].forEach(id => document.getElementById(id).value='');
   document.getElementById('sGender').value='';
-  document.getElementById('sClass').value='';
   document.getElementById('generatedBox').style.display='none';
   document.getElementById('editIdRow').style.display='none';
   document.getElementById('saveStudentBtn').textContent='Preview ID & PIN →';
+
+  // For teacher: lock class to their own class
+  if (currentRole === 'teacher') {
+    document.getElementById('sClass').value = currentClassName;
+    document.getElementById('sClass').disabled = true;
+  } else {
+    document.getElementById('sClass').disabled = false;
+    document.getElementById('sClass').value = '';
+  }
   openModal('studentModal');
 }
 
@@ -665,7 +784,13 @@ function openEditStudent(id) {
   document.getElementById('generatedBox').style.display='none';
   document.getElementById('editIdRow').style.display='block';
   document.getElementById('editIdDisplay').value = id;
-  document.getElementById('saveStudentBtn').textContent='<svg class="icon-svg" aria-hidden="true"><use href="#ic-save"/></svg> Save Changes';
+  document.getElementById('saveStudentBtn').textContent='Save Changes';
+  // For teacher: lock class to their own class
+  if (currentRole === 'teacher') {
+    document.getElementById('sClass').disabled = true;
+  } else {
+    document.getElementById('sClass').disabled = false;
+  }
   openModal('studentModal');
 }
 
@@ -737,7 +862,8 @@ async function deleteStudent(id, name) {
 
 // ══ RESULTS — Student List ══
 async function loadResultStudents() {
-  const cls = document.getElementById('resultClass').value;
+  const cls = (currentRole === 'teacher') ? currentClassName : document.getElementById('resultClass').value;
+  if (currentRole === 'teacher') document.getElementById('resultClass').value = cls;
   const container = document.getElementById('resultStudentList');
   if (!cls) { container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-muted);">Select a class.</div>'; return; }
   const students = allStudents.filter(s => s.currentClass===cls);
@@ -1112,7 +1238,8 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
 
 // ══ SCHEME ══
 async function loadSchemeSubjects() {
-  const cls = document.getElementById('schemeClass').value;
+  const cls = (currentRole === 'teacher') ? currentClassName : document.getElementById('schemeClass').value;
+  if (currentRole === 'teacher') document.getElementById('schemeClass').value = cls;
   const sel = document.getElementById('schemeSubject');
   sel.innerHTML='<option value="">— Select Subject —</option>';
   if (!cls) return;
@@ -1202,7 +1329,8 @@ function switchResultMode(mode) {
 
 // ══ BULK ENTRY ══
 async function loadBulkSubjects() {
-  const cls = document.getElementById('bulkClass').value;
+  const cls = (currentRole === 'teacher') ? currentClassName : document.getElementById('bulkClass').value;
+  if (currentRole === 'teacher') document.getElementById('bulkClass').value = cls;
   const sel = document.getElementById('bulkSubject');
   sel.innerHTML = '<option value="">— Select Subject —</option>';
   document.getElementById('bulkGridCard').style.display  = 'none';
@@ -1431,7 +1559,8 @@ async function loadVisibility() {
 function renderVisibilityToggles() {
   const container = document.getElementById('visibilityToggles');
   if (!container) return;
-  container.innerHTML = CLASSES.map(cls => {
+  const classesToShow = (currentRole === 'teacher') ? [currentClassName] : CLASSES;
+  container.innerHTML = classesToShow.map(cls => {
     const isOn = _visibility[cls] !== false; // default ON if not set
     return `
       <div class="vis-toggle-row">
@@ -1472,6 +1601,20 @@ async function setAllVisibility(isOn) {
 // ══ SUBJECTS MANAGER ══
 let _currentSubjectClass = '';
 let _currentSubjects = [];
+
+// Called during teacher init to auto-load their class subjects without a dropdown
+async function loadSubjectsForClassTeacher() {
+  const cls = currentClassName;
+  if (!cls) return;
+  _currentSubjectClass = cls;
+  const card = document.getElementById('subjectManagerCard');
+  if (card) card.style.display = 'block';
+  const titleEl = document.getElementById('subjectManagerTitle');
+  if (titleEl) titleEl.textContent = cls + ' — Subjects';
+  invalidateSubjectsCache(cls);
+  _currentSubjects = await getSubjectsForClass(cls);
+  renderSubjectList();
+}
 
 async function loadSubjectsForClass() {
   const cls = document.getElementById('subjectClass').value;

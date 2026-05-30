@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Key principles ────────────────────────────────────────────────────
+    // Students have NO Firebase Auth session — they log in via PIN only.
+    // Only Firebase Auth users (teachers/headteachers) access admin pages.
+    //
+    // Two roles stored in admins/{uid}:
+    //   { role: "headteacher" }              → full access to everything
+    //   { role: "teacher", className: "..." } → own class only
+    //
+    // Helper functions below check role and className from the admins doc.
+    // ─────────────────────────────────────────────────────────────────────
+
+    function adminDoc() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
+    }
+
+    function isHeadTeacher() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        adminDoc().role == 'headteacher';
+    }
+
+    function isTeacherForClass(className) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        adminDoc().role == 'teacher' &&
+        adminDoc().className == className;
+    }
+
+    function isAnyAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ── students ──────────────────────────────────────────────────────────
+    // Open read: login page PIN check has no Firebase Auth.
+    // Write: headteacher (any class) OR teacher (own class only).
+    match /students/{studentId} {
+      allow read: if true;
+      allow write: if isHeadTeacher() ||
+        isTeacherForClass(request.resource.data.currentClass);
+    }
+
+    // ── id_counters ───────────────────────────────────────────────────────
+    match /id_counters/{year} {
+      allow read, write: if isAnyAdmin();
+    }
+
+    // ── results ───────────────────────────────────────────────────────────
+    // Open read: students view their results without Firebase Auth.
+    // Write: headteacher (any class) OR teacher (own class only).
+    match /results/{resultId} {
+      allow read: if true;
+      allow write: if isHeadTeacher() ||
+        isTeacherForClass(request.resource.data.className);
+    }
+
+    // ── subjects ──────────────────────────────────────────────────────────
+    // Document ID = className (e.g. "Basic 3").
+    // Write: headteacher (any) OR teacher (their class only).
+    match /subjects/{className} {
+      allow read: if true;
+      allow write: if isHeadTeacher() || isTeacherForClass(className);
+    }
+
+    // ── schemes ───────────────────────────────────────────────────────────
+    // Document contains className field.
+    // Write: headteacher OR teacher for their class.
+    match /schemes/{docId} {
+      allow read: if true;
+      allow write: if isHeadTeacher() ||
+        isTeacherForClass(request.resource.data.className);
+    }
+
+    // ── announcements ─────────────────────────────────────────────────────
+    // Any authenticated admin (teacher or headteacher) can post and delete.
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAnyAdmin();
+    }
+
+    // ── lesson_notes ──────────────────────────────────────────────────────
+    // Document contains className field.
+    // Write: headteacher OR teacher for their class.
+    match /lesson_notes/{noteId} {
+      allow read: if true;
+      allow write: if isHeadTeacher() ||
+        isTeacherForClass(request.resource.data.className);
+    }
+
+    // ── settings ──────────────────────────────────────────────────────────
+    // Results visibility. Students read to check if their class is visible.
+    // Any authenticated admin can write (teacher-specific field update is
+    // enforced in the UI; Firestore merges the single shared document).
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAnyAdmin();
+    }
+
+    // ── admins ────────────────────────────────────────────────────────────
+    // Any authenticated admin can read (needed for role lookup).
+    // Nobody writes via client SDK — manage in Firebase Console only.
+    match /admins/{adminId} {
+      allow read: if isAnyAdmin();
+      allow write: if false;
+    }
+
+  }
+}

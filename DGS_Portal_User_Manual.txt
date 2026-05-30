@@ -1,0 +1,440 @@
+================================================================
+     DIVINE GRACE SCHOOL PORTAL — USER MANUAL
+================================================================
+          Outstanding in Knowledge — D.G.S Portal
+================================================================
+
+
+----------------------------------------------------------------
+PART 1 — GETTING STARTED (FOR EVERYONE)
+----------------------------------------------------------------
+
+WHAT IS THE PORTAL?
+The Divine Grace School Portal is an online platform where:
+   - Teachers (Admin) can manage students, enter results,
+     upload lesson notes, post announcements, and manage
+     the scheme of work
+   - Students can view their results, read announcements,
+     access the scheme of work, and read lesson notes
+
+HOW TO ACCESS
+Open the portal by typing the school website link into any
+web browser on your phone or computer. The website works on
+all devices including phones, tablets, and computers.
+
+THE LOGIN PAGE
+When you open the portal you will see two login options:
+   - Student  →  for students to log in
+   - Admin    →  for teachers to log in
+
+================================================================
+PART 2 — ADMIN (TEACHER) GUIDE
+================================================================
+
+----------------------------------------------------------------
+2.1  LOGGING IN AS ADMIN
+----------------------------------------------------------------
+
+1. On the login page click the "Admin" button at the top
+2. Enter your assigned email address
+   Example: basic3@divinegrace.com
+3. Enter the password given to you
+4. Click "Admin Sign In"
+
+You will be taken to the Admin Dashboard.
+
+NOTE: Each teacher has their own email login assigned to their
+class. Do not share your login details with students.
+
+
+----------------------------------------------------------------
+2.2  THE ADMIN DASHBOARD OVERVIEW
+----------------------------------------------------------------
+
+On the left side (or bottom on mobile) you will see a menu
+with the following sections:
+
+   - Students       → manage student records
+   - Results        → enter and manage student results
+   - Subjects       → manage subjects per class
+   - Scheme of Work → upload topics per subject and term
+   - Announcements  → post notices to students
+   - Lesson Notes   → write and publish lesson notes
+
+
+----------------------------------------------------------------
+2.3  STUDENTS TAB
+----------------------------------------------------------------
+
+VIEWING STUDENTS
+When you click Students you will see a grid of all classes.
+Click on any class card to see the list of students in it.
+You can search for a student by name or ID using the search
+box at the top of the list.
+
+ADDING A NEW STUDENT
+1. Click on the class you want to add the student to
+2. Click the "Add Student" button
+3. Fill in the form:
+      - Full Name
+      - Gender
+      - Age
+      - Current Class
+      - Year Registered (the year they joined e.g. 2026)
+4. Click "Preview ID & PIN"
+   The system will automatically generate:
+      - A Student ID  e.g. DGS-001-2026
+      - A PIN         e.g. 5823
+   Write these down — the student will use them to log in
+5. Click "Confirm & Save Student" to save
+
+EDITING A STUDENT
+1. Find the student in their class list
+2. Click the "Edit" button next to their name
+3. Update the details and click "Save Changes"
+
+DELETING A STUDENT
+1. Find the student in their class list
+2. Click the red trash (delete) button next to their name
+3. Confirm the deletion
+WARNING: This cannot be undone. All that student's data
+will need to be re-entered if deleted by mistake.
+
+
+----------------------------------------------------------------
+2.4  SUBJECTS TAB
+----------------------------------------------------------------
+
+Subjects must be set up for each class before you can enter
+results, scheme of work, or lesson notes for that class.
+
+ADDING SUBJECTS TO A CLASS
+1. Click the "Subjects" tab
+2. Select the class from the dropdown
+3. Type the subject name in the input box
+4. Click "Add" or press Enter
+5. Repeat for all subjects in that class
+6. Subjects are saved automatically and sorted alphabetically
+
+REMOVING A SUBJECT
+Click the red trash button next to the subject name.
+NOTE: Removing a subject does not delete existing results
+that were already saved for that subject.
+
+
+----------------------------------------------------------------
+2.5  RESULTS TAB
+----------------------------------------------------------------
+
+IMPORTANT — BEFORE ENTERING RESULTS:
+Results Visibility toggles are at the top of the Results tab.
+When a class is toggled OFF, students in that class will see
+"Results Not Yet Available" instead of their scores. Toggle
+classes OFF while you are uploading to avoid students seeing
+incomplete results. Toggle them back ON when done.
+
+   "Enable All"  → makes all classes visible to students
+   "Disable All" → hides all results from students
+
+ENTERING RESULTS — TWO MODES:
+
+MODE 1: By Student (enter one student at a time)
+   Best for entering full results including remarks,
+   attendance, character assessment, and activities.
+
+   Steps:
+   1. Select the class
+   2. Select the term (Term 1, Term 2, or Term 3)
+   3. Enter the session e.g. 2025/2026
+   4. A list of students in that class will appear
+   5. Click "Enter Result" next to the student's name
+   6. Fill in the result form (see below)
+   7. Click "Save & Compute"
+   The system automatically calculates positions, class
+   averages, highest and lowest scores.
+
+MODE 2: By Subject / Bulk Entry
+   Best for quickly entering scores for one subject
+   across all students in a class at once.
+
+   Steps:
+   1. Select the class
+   2. Select the subject
+   3. Select the term
+   4. Enter the session
+   5. A table of all students appears with CA1, CA2, Exam
+      columns for each student
+   6. Fill in the scores
+   7. Click "Save All & Compute"
+
+RESULT FORM — LOWER SCHOOL (Nursery to Basic 3):
+   General Info:
+      - Age at End of Term
+      - Conduct Rating (1 to 5)
+      - Days Attended
+      - Days Absent
+      - Term Ending Date
+      - Next Term Resumption Date
+
+   Subject Scores:
+      - CA 1 (out of 20)
+      - CA 2 (out of 20)
+      - Exam (out of 60)
+      Total is calculated automatically out of 100
+
+   Character Assessment:
+      Rate the student 1 to 5 stars for each trait:
+      Behaviour, Punctuality, Staff Relationship,
+      Politeness, Neatness, Obedience,
+      Adjustment in School, Behaviour with Peers
+
+   Extra-Curricular Activities:
+      Enter activity names and rate performance 1 to 5 stars
+      Click "+ Add Activity" to add more rows
+
+   Remarks:
+      - Teacher's Name
+      - Head Teacher's Name
+      - Teacher's Remark
+      - Head Teacher's Remark
+
+RESULT FORM — UPPER SCHOOL (Basic 4 to Basic 9):
+   General Info:
+      - Age at End of Term
+      - Number of School Days
+      - Days in Attendance
+
+   Subject Scores:
+      - CA 1 (out of 20)
+      - CA 2 (out of 20)
+      - Exam (out of 60)
+      Total is calculated automatically out of 100
+
+   Remarks:
+      - Teacher's Name
+      - Principal's Name
+      - Teacher's Remark
+      - Principal's Remark
+
+GRADING SYSTEM:
+   Lower School (Nursery – Basic 3):
+      90 and above  → A  Outstanding
+      80 – 89       → B  Excellent
+      70 – 79       → C  Very Good
+      60 – 69       → D  Good
+      50 – 59       → E  Average
+      40 – 49       → F  Pass
+      Below 40      →    Fail
+
+   Upper School (Basic 4 – Basic 9):
+      70 and above  → A  Excellent
+      60 – 69       → B  Very Good
+      50 – 59       → C  Good
+      40 – 49       → D  Pass
+      Below 40      → F  Fail
+
+
+----------------------------------------------------------------
+2.6  SCHEME OF WORK TAB
+----------------------------------------------------------------
+
+The scheme of work shows students the topics they will cover
+per subject per term.
+
+UPLOADING TOPICS
+1. Click the "Scheme of Work" tab
+2. Select the class
+3. Select the subject
+4. Select the term (Term 1, Term 2, or Term 3)
+5. Type each topic into the input boxes
+6. Click "+ Add Topic" to add more rows
+7. Click "Save Topics" when done
+8. Repeat for each subject and term
+
+NOTE: Subjects must be set up in the Subjects tab first
+before they appear here.
+
+
+----------------------------------------------------------------
+2.7  ANNOUNCEMENTS TAB
+----------------------------------------------------------------
+
+Post notices, reminders, and news that all students will see
+when they log in.
+
+POSTING AN ANNOUNCEMENT
+1. Click the "Announcements" tab
+2. Enter a Title  e.g. "Mid-Term Break Notice"
+3. Select a Tag (optional):
+      General / Academic / Event / Holiday / Urgent
+4. Type your message in the Message box
+5. Click "Post"
+The announcement appears immediately on the student portal.
+
+DELETING AN ANNOUNCEMENT
+Scroll down to see all posted announcements.
+Click the red trash button next to the one you want to remove.
+
+
+----------------------------------------------------------------
+2.8  LESSON NOTES TAB
+----------------------------------------------------------------
+
+Write and publish lesson notes that students can read on
+their portal.
+
+CREATING A NEW NOTE
+1. Click "Lesson Notes" in the sidebar
+2. Click the "+ New Note" button
+3. Select the Class, Subject, and Term
+4. Type your note in the editor
+   You can format text using the toolbar:
+      Bold, Italic, Underline, Headings, Lists, Tables
+   You can also paste or drag and drop images directly
+   into the editor
+5. Click "Save Note"
+
+EDITING AN EXISTING NOTE
+1. Find the note in the list on the left
+2. Click on it to open it
+3. Click the "Edit" button
+4. Make your changes and click "Save Note"
+
+DELETING A NOTE
+1. Open the note
+2. Click "Delete"
+3. Confirm the deletion
+
+NOTE: One note is stored per class/subject/term combination.
+If you save a note for the same class, subject, and term
+again it will update the existing note.
+
+LOGGING OUT
+Click "Sign Out" at the bottom of the sidebar to log out
+safely when you are done.
+
+
+================================================================
+PART 3 — STUDENT GUIDE
+================================================================
+
+----------------------------------------------------------------
+3.1  LOGGING IN AS A STUDENT
+----------------------------------------------------------------
+
+1. Open the portal website link
+2. Make sure "Student" is selected at the top of the
+   login page (it is selected by default)
+3. Enter your Student ID  e.g. DGS-001-2026
+4. Enter your 4-digit PIN
+5. Click "Sign In"
+
+Your Student ID and PIN were given to you by your school.
+If you have lost them contact your class teacher.
+
+
+----------------------------------------------------------------
+3.2  THE STUDENT DASHBOARD
+----------------------------------------------------------------
+
+After logging in you will see your Dashboard which shows:
+   - Your name and class at the top
+   - Your profile information
+   - A summary of your latest results
+   - Recent school announcements
+
+At the top (or bottom on mobile) you will see the menu:
+   - Dashboard      → your home page
+   - My Results     → view your full report card
+   - Scheme of Work → see topics covered in your class
+   - Announcements  → read school news and notices
+
+
+----------------------------------------------------------------
+3.3  MY RESULTS PAGE
+----------------------------------------------------------------
+
+1. Click "My Results" from the menu
+2. Select the Session  e.g. 2025/2026
+3. Select the Class
+4. Select the Term (Term 1, Term 2, or Term 3)
+Your result will load showing:
+   - Your average score and position in class
+   - Your scores for each subject
+   - Character assessment (lower school)
+   - Extra-curricular activities (lower school)
+   - Teacher and Head Teacher remarks
+
+PRINTING YOUR RESULT
+Click the "Print Result" button at the bottom of the page
+to print or save your result as a PDF.
+
+NOTE: If you see "Results Not Yet Available" it means your
+teacher has not released the results yet. Check back later.
+
+
+----------------------------------------------------------------
+3.4  SCHEME OF WORK PAGE
+----------------------------------------------------------------
+
+1. Click "Scheme of Work" from the menu
+2. Your class scheme loads automatically
+3. Click on any subject to expand and see the topics
+   covered across Term 1, Term 2, and Term 3
+
+
+----------------------------------------------------------------
+3.5  ANNOUNCEMENTS PAGE
+----------------------------------------------------------------
+
+Click "Announcements" from the menu to read all school
+notices, event updates, and important messages from the
+school. The most recent announcements appear at the top.
+
+
+----------------------------------------------------------------
+3.6  LOGGING OUT
+----------------------------------------------------------------
+
+Click the "Logout" button at the bottom of the sidebar
+(or in the menu on mobile) to log out of your account.
+Always log out when using a shared or public device.
+
+
+================================================================
+PART 4 — TIPS AND REMINDERS
+================================================================
+
+FOR TEACHERS:
+   - Always set up Subjects for a class before entering
+     results or uploading scheme of work
+   - Toggle results visibility OFF before uploading to avoid
+     students seeing incomplete data
+   - Each teacher should use only their own login email
+   - If you make a mistake on a result you can re-open it
+     and save again — it will overwrite the previous entry
+   - The system automatically calculates positions and
+     averages whenever you save a result
+
+FOR STUDENTS:
+   - Your Student ID and PIN are unique to you — do not
+     share them with others
+   - Results only appear after your teacher has uploaded
+     and released them
+   - You can print your result directly from the portal
+     by clicking "Print Result"
+   - The portal works on any phone or computer with
+     internet access
+
+FOR THE SCHOOL:
+   - Student IDs follow the format:  DGS-001-2026
+     (School code - serial number - year registered)
+   - PINs are automatically generated and linked to
+     each student's ID
+   - Keep a record of each student's ID and PIN in case
+     they forget
+
+================================================================
+                    END OF MANUAL
+     For technical support contact your portal administrator
+================================================================
