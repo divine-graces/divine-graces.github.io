@@ -540,31 +540,22 @@ let studentModalStep = 'form'; // 'form' | 'confirm'
 
 // ══ INIT ══
 async function init() {
-  auth.onAuthStateChanged(async u => {
-    if (!u) { window.location.href = 'index.html'; return; }
+  auth.onAuthStateChanged(u => { if(!u) window.location.href='index.html'; else document.getElementById('adminEmailLabel').textContent = u.email; });
+  document.getElementById('sessionLabel').textContent = getCurrentSession();
+  document.getElementById('resultSession').value = getCurrentSession();
+  document.getElementById('bulkSession').value   = getCurrentSession();
 
-    document.getElementById('adminEmailLabel').textContent = u.email;
-    document.getElementById('sessionLabel').textContent = getCurrentSession();
-    document.getElementById('resultSession').value = getCurrentSession();
-    document.getElementById('bulkSession').value   = getCurrentSession();
-
-    // Populate class selects
-    ['resultClass','schemeClass','sClass','subjectClass','bulkClass'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      CLASSES.forEach(c => { const o = document.createElement('option'); o.value=c; o.textContent=c; el.appendChild(o); });
-    });
-
-    try {
-      await loadAllStudents();
-      await loadAnnouncementsAdmin();
-      await loadVisibility();
-    } catch(e) {
-      console.error('Admin init error:', e);
-    } finally {
-      document.getElementById('loadingOverlay').style.display = 'none';
-    }
+  // Populate class selects
+  ['resultClass','schemeClass','sClass','subjectClass','bulkClass'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    CLASSES.forEach(c => { const o = document.createElement('option'); o.value=c; o.textContent=c; el.appendChild(o); });
   });
+
+  await loadAllStudents();
+  await loadAnnouncementsAdmin();
+  await loadVisibility();
+  document.getElementById('loadingOverlay').style.display = 'none';
 }
 
 // ══ TABS ══
