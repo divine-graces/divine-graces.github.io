@@ -655,6 +655,7 @@ function applyTeacherUI() {
   // Trigger dependent loads that normally fire on dropdown change
   loadSchemeSubjects();
   loadSubjectsForClassTeacher();
+  loadBulkSubjects();
 }
 
 // ══ TABS ══
@@ -669,7 +670,7 @@ function switchTab(tab) {
 
   // For teachers: auto-trigger data loads when switching tabs
   if (currentRole === 'teacher') {
-    if (tab === 'results') loadResultStudents();
+    if (tab === 'results') { loadResultStudents(); loadBulkSubjects(); }
     if (tab === 'subjects') loadSubjectsForClassTeacher();
     if (tab === 'scheme')   loadSchemeSubjects();
   }
