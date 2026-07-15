@@ -244,7 +244,7 @@
     renderResult();
   }
 
-  function renderResult() {
+  async function renderResult() {
     const sess = document.getElementById('selSession').value;
     const cls  = document.getElementById('selClass').value;
     const term = document.getElementById('selTerm').value;
@@ -257,11 +257,11 @@
     }
 
     if (isNurseryOrLowerPrimary(cls)) {
-      renderLowerScreen(r);
-      buildLowerPrint(r, sess, cls, term);
+      await renderLowerScreen(r);
+      await buildLowerPrint(r, sess, cls, term);
     } else {
-      renderUpperScreen(r);
-      buildUpperPrint(r, sess, cls, term);
+      await renderUpperScreen(r);
+      await buildUpperPrint(r, sess, cls, term);
     }
   }
 
@@ -272,11 +272,11 @@
     const traits   = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
 
     const subRows = subjects.map(s => {
-      const sc  = scores[s] || {};
+      const sc  = scores[fkey(s)] || {};
       const ca1 = Number(sc.ca1||0), ca2 = Number(sc.ca2||0), exam = Number(sc.exam||0);
       const total = computeTotal(ca1, ca2, exam);
       const {grade,comment} = getGrade(total, r.className);
-      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[s]||'—')+'</td><td>'+(r.subjectLowest?.[s]||'—')+'</td><td>'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td><span class="badge badge-'+(grade||'F')+'">'+( grade||'F')+'</span></td><td style="color:var(--text-muted);font-size:.82rem;">'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[fkey(s)]||'—')+'</td><td>'+(r.subjectLowest?.[fkey(s)]||'—')+'</td><td>'+(r.subjectPositions?.[fkey(s)]?'#'+r.subjectPositions[fkey(s)]:'—')+'</td><td><span class="badge badge-'+(grade||'F')+'">'+( grade||'F')+'</span></td><td style="color:var(--text-muted);font-size:.82rem;">'+comment+'</td></tr>';
     }).join('');
 
     const traitHTML = traits.map(t => {
@@ -314,11 +314,11 @@
     const traits   = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
 
     const subRows = subjects.map(s => {
-      const sc = scores[s]||{};
+      const sc = scores[fkey(s)]||{};
       const ca1=Number(sc.ca1||0), ca2=Number(sc.ca2||0), exam=Number(sc.exam||0);
       const total = computeTotal(ca1,ca2,exam);
       const {grade,comment} = getGrade(total, r.className);
-      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[s]||'—')+'</td><td>'+(r.subjectLowest?.[s]||'—')+'</td><td>'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td><span class="badge badge-'+grade+'">'+grade+'</span></td><td style="font-size:.8rem;color:var(--text-muted);">'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[fkey(s)]||'—')+'</td><td>'+(r.subjectLowest?.[fkey(s)]||'—')+'</td><td>'+(r.subjectPositions?.[fkey(s)]?'#'+r.subjectPositions[fkey(s)]:'—')+'</td><td><span class="badge badge-'+grade+'">'+grade+'</span></td><td style="font-size:.8rem;color:var(--text-muted);">'+comment+'</td></tr>';
     }).join('');
 
     const traitHTML = traits.map(t => {
@@ -356,17 +356,17 @@
   function pStars(n) { return '★'.repeat(n||0)+'☆'.repeat(5-(n||0)); }
   function pGrade(g) { return '<span class="pb-g pb-g'+(g||'F')+'">'+( g||'F')+'</span>'; }
 
-  function buildLowerPrint(r, sess, cls, term) {
+  async function buildLowerPrint(r, sess, cls, term) {
     const subjects = await getSubjectsForClass(r.className);
     const scores   = r.scores||{};
     const traits   = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
 
     const subRows = subjects.map(s => {
-      const sc  = scores[s]||{};
+      const sc  = scores[fkey(s)]||{};
       const ca1 = Number(sc.ca1||0), ca2 = Number(sc.ca2||0), exam = Number(sc.exam||0);
       const total = computeTotal(ca1,ca2,exam);
       const {grade,comment} = getGrade(total, r.className);
-      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[fkey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[fkey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[fkey(s)]?'#'+r.subjectPositions[fkey(s)]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
     }).join('');
 
     const traitCells = traits.map(t =>
@@ -401,17 +401,17 @@
       '<div class="pb-remark"><b>Head Teacher</b>'+(r.headTeacherRemark||'—')+'</div>';
   }
 
-  function buildUpperPrint(r, sess, cls, term) {
+  async function buildUpperPrint(r, sess, cls, term) {
     const subjects = await getSubjectsForClass(r.className);
     const scores   = r.scores||{};
     const traits   = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
 
     const subRows = subjects.map(s => {
-      const sc = scores[s]||{};
+      const sc = scores[fkey(s)]||{};
       const ca1=Number(sc.ca1||0), ca2=Number(sc.ca2||0), exam=Number(sc.exam||0);
       const total = computeTotal(ca1,ca2,exam);
       const {grade,comment} = getGrade(total, r.className);
-      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[fkey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[fkey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[fkey(s)]?'#'+r.subjectPositions[fkey(s)]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
     }).join('');
 
     const traitCells = traits.map(t => {

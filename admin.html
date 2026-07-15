@@ -818,7 +818,7 @@ async function openLowerResultModal(studentId, className, studentName) {
     if (!snap.empty) {
       const r = snap.docs[0].data();
       subjects.forEach(s => {
-        const sc = r.scores?.[s] || {};
+        const sc = r.scores?.[fkey(s)] || {};
         const ca1El  = document.getElementById(`ls_ca1_${sanitize(s)}`);
         const ca2El  = document.getElementById(`ls_ca2_${sanitize(s)}`);
         const examEl = document.getElementById(`ls_exam_${sanitize(s)}`);
@@ -891,7 +891,7 @@ async function saveLowerResult() {
     const ca1  = Number(ca1El?.value||0);
     const ca2  = Number(ca2El?.value||0);
     const exam = Number(examEl?.value||0);
-    scores[s]  = { ca1, ca2, exam, total: computeTotal(ca1, ca2, exam) };
+    scores[fkey(s)]  = { ca1, ca2, exam, total: computeTotal(ca1, ca2, exam) };
   });
 
   const enteredSubjects = Object.keys(scores);
@@ -940,9 +940,9 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
   const docId = `${thisStudentId}_${className}_${session}_${term}`.replace(/[\s/]/g,'_');
   await db.collection('results').doc(docId).set(resultData);
 
-  const snap = await db.collection('results')
-    .where('className','==',className).where('term','==',term).where('session','==',session).get();
-  const allResultDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snap = await db.collection('results').where('className','==',className).get();
+  const allResultDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(d => d.term === term && d.session === session);
   const subjects = await getSubjectsForClass(className);
 
   // Overall class average and positions
@@ -959,7 +959,7 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
   // Subject stats: highest, lowest, positions
   subjects.forEach(subj => {
     const subjectTotals = allResultDocs
-      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
+      .map(r => ({ id: r.id, total: r.scores?.[fkey(subj)]?.total||0 }))
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
@@ -970,10 +970,10 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
       batch.update(db.collection('results').doc(x.id), {
-        [`subjectHighest.${subj}`]: highest,
-        [`subjectLowest.${subj}`]:  lowest,
-        [`subjectClassAvg.${subj}`]: subjectAvg,
-        [`subjectPositions.${subj}`]: sp
+        [`subjectHighest.${fkey(subj)}`]: highest,
+        [`subjectLowest.${fkey(subj)}`]:  lowest,
+        [`subjectClassAvg.${fkey(subj)}`]: subjectAvg,
+        [`subjectPositions.${fkey(subj)}`]: sp
       });
     });
   });
@@ -1022,7 +1022,7 @@ async function openUpperResultModal(studentId, className, studentName) {
     if (!snap.empty) {
       const r = snap.docs[0].data();
       subjects.forEach(s => {
-        const sc = r.scores?.[s]||{};
+        const sc = r.scores?.[fkey(s)]||{};
         const ca1El  = document.getElementById(`us_ca1_${sanitize(s)}`);
         const ca2El  = document.getElementById(`us_ca2_${sanitize(s)}`);
         const exEl   = document.getElementById(`us_exam_${sanitize(s)}`);
@@ -1101,7 +1101,7 @@ async function saveUpperResult() {
     const ca1  = Number(ca1El?.value||0);
     const ca2  = Number(ca2El?.value||0);
     const exam = Number(examEl?.value||0);
-    scores[s]  = { ca1, ca2, exam, total: computeTotal(ca1,ca2,exam) };
+    scores[fkey(s)]  = { ca1, ca2, exam, total: computeTotal(ca1,ca2,exam) };
   });
 
   const enteredSubjects = Object.keys(scores);
@@ -1153,9 +1153,9 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
   await db.collection('results').doc(docId).set(resultData);
 
   // All results for this class/term/session
-  const snap = await db.collection('results')
-    .where('className','==',className).where('term','==',term).where('session','==',session).get();
-  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snap = await db.collection('results').where('className','==',className).get();
+  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(d => d.term === term && d.session === session);
   const subjects = await getSubjectsForClass(className);
 
   // Class average (overall)
@@ -1174,7 +1174,7 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
   // Subject stats: highest, lowest, subject positions
   subjects.forEach(subj => {
     const subjectTotals = allDocs
-      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
+      .map(r => ({ id: r.id, total: r.scores?.[fkey(subj)]?.total||0 }))
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
@@ -1185,10 +1185,10 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
       batch.update(db.collection('results').doc(x.id), {
-        [`subjectHighest.${subj}`]: highest,
-        [`subjectLowest.${subj}`]:  lowest,
-        [`subjectClassAvg.${subj}`]: subjectAvg,
-        [`subjectPositions.${subj}`]: sp
+        [`subjectHighest.${fkey(subj)}`]: highest,
+        [`subjectLowest.${fkey(subj)}`]:  lowest,
+        [`subjectClassAvg.${fkey(subj)}`]: subjectAvg,
+        [`subjectPositions.${fkey(subj)}`]: sp
       });
     });
   });
@@ -1331,21 +1331,15 @@ async function loadBulkGrid() {
   // Fetch existing scores for this class/term/session to pre-fill
   let existingResults = {};
   try {
-    const snap = await db.collection('results')
-      .where('className','==',cls)
-      .where('term','==',term)
-      .where('session','==',session)
-      .get();
-    snap.docs.forEach(d => {
-      const data = d.data();
-      existingResults[data.studentId] = data;
-    });
+    const snap = await db.collection('results').where('className','==',cls).get();
+    snap.docs.filter(d => d.data().term===term && d.data().session===session)
+      .forEach(d => { const data = d.data(); existingResults[data.studentId] = data; });
   } catch(e) { console.warn('Could not pre-fetch results:', e); }
 
   // Build table rows
   const tbody = document.getElementById('bulkGridBody');
   tbody.innerHTML = students.map((s, idx) => {
-    const existing = existingResults[s.id]?.scores?.[subject] || {};
+    const existing = existingResults[s.id]?.scores?.[fkey(subject)] || {};
     const ca1  = existing.ca1  ?? '';
     const ca2  = existing.ca2  ?? '';
     const exam = existing.exam ?? '';
@@ -1400,10 +1394,11 @@ async function saveBulkResults() {
 
   try {
     // Step 1: fetch all existing results for this class/term/session
-    const existingSnap = await db.collection('results')
-      .where('className','==',cls).where('term','==',term).where('session','==',session).get();
+    const existingSnap = await db.collection('results').where('className','==',cls).get();
+    // Filter in JS to avoid composite index requirement
     const existingMap = {};
-    existingSnap.docs.forEach(d => { existingMap[d.data().studentId] = { id: d.id, ...d.data() }; });
+    existingSnap.docs.filter(d => d.data().term===term && d.data().session===session)
+      .forEach(d => { existingMap[d.data().studentId] = { id: d.id, ...d.data() }; });
 
     // Step 2: write updated scores for each student
     const batch = db.batch();
@@ -1427,7 +1422,7 @@ async function saveBulkResults() {
       // Merge into existing doc so we don't wipe traits/remarks/attendance
       batch.set(ref, {
         studentId: s.id, className: cls, term, session,
-        [`scores.${subject}`]: { ca1, ca2, exam, total },
+        [`scores.${fkey(subject)}`]: { ca1, ca2, exam, total },
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
     });
@@ -1447,9 +1442,9 @@ async function saveBulkResults() {
 
 // Recompute overall positions, averages, and subject stats after any save
 async function recomputeClassStats(cls, term, session) {
-  const snap = await db.collection('results')
-    .where('className','==',cls).where('term','==',term).where('session','==',session).get();
-  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snap = await db.collection('results').where('className','==',cls).get();
+  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(d => d.term === term && d.session === session);
   const subjects = await getSubjectsForClass(cls);
 
   // Recompute each student's overall average from all their scores
@@ -1457,7 +1452,7 @@ async function recomputeClassStats(cls, term, session) {
   allDocs.forEach(r => {
     const enteredSubjects = Object.keys(r.scores||{});
     if (!enteredSubjects.length) return;
-    const totals  = enteredSubjects.map(s => r.scores[s]?.total||0);
+    const totals  = enteredSubjects.map(s => r.scores[fkey(s)]?.total||0);
     const average = Math.round(totals.reduce((a,b)=>a+b,0)/totals.length);
     const passFail = average >= 40 ? 'Pass' : 'Fail';
     batch1.update(db.collection('results').doc(r.id), { average, passFail });
@@ -1465,9 +1460,9 @@ async function recomputeClassStats(cls, term, session) {
   await batch1.commit();
 
   // Re-fetch with updated averages
-  const snap2   = await db.collection('results')
-    .where('className','==',cls).where('term','==',term).where('session','==',session).get();
-  const allDocs2 = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snap2 = await db.collection('results').where('className','==',cls).get();
+  const allDocs2 = snap2.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(d => d.term === term && d.session === session);
 
   const classAvg = allDocs2.length
     ? Math.round(allDocs2.reduce((s,r)=>s+(r.average||0),0)/allDocs2.length) : 0;
@@ -1482,7 +1477,7 @@ async function recomputeClassStats(cls, term, session) {
 
   subjects.forEach(subj => {
     const subjectTotals = allDocs2
-      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
+      .map(r => ({ id: r.id, total: r.scores?.[fkey(subj)]?.total||0 }))
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
@@ -1493,10 +1488,10 @@ async function recomputeClassStats(cls, term, session) {
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
       batch2.update(db.collection('results').doc(x.id), {
-        [`subjectHighest.${subj}`]: highest,
-        [`subjectLowest.${subj}`]:  lowest,
-        [`subjectClassAvg.${subj}`]: subjectAvg,
-        [`subjectPositions.${subj}`]: sp
+        [`subjectHighest.${fkey(subj)}`]: highest,
+        [`subjectLowest.${fkey(subj)}`]:  lowest,
+        [`subjectClassAvg.${fkey(subj)}`]: subjectAvg,
+        [`subjectPositions.${fkey(subj)}`]: sp
       });
     });
   });
@@ -1629,6 +1624,8 @@ async function removeSubject(name) {
 
 // ══ HELPERS ══
 function sanitize(str) { return str.replace(/[\s&\/]/g,'_').toLowerCase(); }
+// Safe Firestore field key — replaces chars not allowed in Firestore field names
+function fkey(str) { return str.replace(/\//g,'_').replace(/&/g,'and'); }
 function openModal(id)  { document.getElementById(id).style.display='flex'; }
 function closeModal(id) { document.getElementById(id).style.display='none'; }
 document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.style.display='none'; }));
