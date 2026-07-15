@@ -132,7 +132,10 @@
     <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text">Loading...</div></div>
 
     <div class="admin-topbar">
-      <div><h2><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg> Admin Dashboard</h2><p id="adminEmailLabel">Divine Grace School</p></div>
+      <div>
+        <h2 id="adminDashTitle"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg> Admin Dashboard</h2>
+        <p id="adminEmailLabel">Divine Grace School</p>
+      </div>
       <div style="font-size:.8rem;opacity:.7;">Session: <strong id="sessionLabel"></strong></div>
     </div>
 
@@ -479,7 +482,10 @@
 
       <!-- Remarks -->
       <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-message"/></svg> Remarks</div>
-      <div class="form-group"><label class="form-label">Teacher's Name</label><input class="form-control" id="lr_teacherName"/></div>
+      <div class="two-col">
+        <div class="form-group"><label class="form-label">Teacher's Name</label><input class="form-control" id="lr_teacherName"/></div>
+        <div class="form-group"><label class="form-label">Head Teacher's Name</label><input class="form-control" id="lr_headName"/></div>
+      </div>
       <div class="form-group"><label class="form-label">Teacher's Remark</label><textarea class="form-control" id="lr_teacherRemark" rows="2"></textarea></div>
       <div class="form-group"><label class="form-label">Head Teacher's Remark</label><textarea class="form-control" id="lr_headRemark" rows="2"></textarea></div>
     </div>
@@ -501,28 +507,13 @@
       <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-clipboard"/></svg> General Info</div>
       <div class="two-col">
         <div class="form-group"><label class="form-label">Age at End of Term</label><input type="number" class="form-control" id="ur_age"/></div>
-        <div class="form-group"><label class="form-label">Conduct Rating (1–5)</label>
-          <select class="form-control" id="ur_conduct"><option value="1">1 — Poor</option><option value="2">2 — Fair</option><option value="3">3 — Good</option><option value="4">4 — Very Good</option><option value="5" selected>5 — Excellent</option></select>
-        </div>
         <div class="form-group"><label class="form-label">Number of School Days</label><input type="number" class="form-control" id="ur_schoolDays"/></div>
         <div class="form-group"><label class="form-label">Days in Attendance</label><input type="number" class="form-control" id="ur_daysAttended"/></div>
-        <div class="form-group"><label class="form-label">Days Absent</label><input type="number" class="form-control" id="ur_daysAbsent"/></div>
-        <div class="form-group"><label class="form-label">Term Ending Date</label><input type="date" class="form-control" id="ur_termEnd"/></div>
-        <div class="form-group"><label class="form-label">Next Term Resumption</label><input type="date" class="form-control" id="ur_resumption"/></div>
       </div>
 
       <!-- Subjects -->
       <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subject Scores (CA1/20 + CA2/20 + Exam/60)</div>
       <div id="upperScoresContainer"></div>
-
-      <!-- Character Assessment -->
-      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-star"/></svg> Character Assessment</div>
-      <div id="ur_traitsContainer"></div>
-
-      <!-- Extra-Curricular Activities -->
-      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-target"/></svg> Extra-Curricular Activities</div>
-      <div id="ur_activitiesContainer"></div>
-      <button class="btn btn-outline btn-sm" onclick="addUpperActivity()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-plus"/></svg> Add Activity</button>
 
       <!-- Remarks -->
       <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-message"/></svg> Remarks</div>
@@ -553,24 +544,118 @@ let currentResultStudentId = null;
 let currentResultClassName = null;
 let studentModalStep = 'form'; // 'form' | 'confirm'
 
+// ══ ROLE STATE (set once during init, never mutated) ══
+let currentRole      = null;  // 'headteacher' | 'teacher'
+let currentClassName = null;  // e.g. 'Basic 3' — null for headteacher
+
 // ══ INIT ══
 async function init() {
-  auth.onAuthStateChanged(u => { if(!u) window.location.href='index.html'; else document.getElementById('adminEmailLabel').textContent = u.email; });
+  // Verify Firebase Auth session and fetch role from Firestore
+  await new Promise(resolve => {
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'index.html'; return; }
+
+      try {
+        const adminDoc = await db.collection('admins').doc(user.uid).get();
+        if (!adminDoc.exists) { auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html'; return; }
+
+        const data = adminDoc.data();
+        currentRole      = data.role || 'teacher';
+        currentClassName = data.className || null;
+
+        // Validate teacher has a className
+        if (currentRole === 'teacher' && !currentClassName) {
+          auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html'; return;
+        }
+
+        document.getElementById('adminEmailLabel').textContent = user.email;
+        applyRoleBadge();
+      } catch(e) {
+        console.error('Role fetch error:', e);
+        auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html';
+      }
+      resolve();
+    });
+  });
+
   document.getElementById('sessionLabel').textContent = getCurrentSession();
   document.getElementById('resultSession').value = getCurrentSession();
   document.getElementById('bulkSession').value   = getCurrentSession();
 
-  // Populate class selects
-  ['resultClass','schemeClass','sClass','subjectClass','bulkClass'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    CLASSES.forEach(c => { const o = document.createElement('option'); o.value=c; o.textContent=c; el.appendChild(o); });
-  });
+  if (currentRole === 'teacher') {
+    applyTeacherUI();
+  } else {
+    // Head teacher: populate all class selects normally
+    ['resultClass','schemeClass','sClass','subjectClass','bulkClass'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      CLASSES.forEach(c => { const o = document.createElement('option'); o.value=c; o.textContent=c; el.appendChild(o); });
+    });
+  }
 
   await loadAllStudents();
   await loadAnnouncementsAdmin();
   await loadVisibility();
   document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// ══ ROLE BADGE ══
+function applyRoleBadge() {
+  const topbar = document.querySelector('.admin-topbar h2');
+  if (!topbar) return;
+  const badge = currentRole === 'headteacher'
+    ? `<span style="font-size:.7rem;font-weight:700;background:#c8963e;color:#fff;padding:3px 10px;border-radius:12px;margin-left:10px;vertical-align:middle;">HEAD TEACHER</span>`
+    : `<span style="font-size:.7rem;font-weight:700;background:rgba(255,255,255,0.25);color:#fff;padding:3px 10px;border-radius:12px;margin-left:10px;vertical-align:middle;">${currentClassName}</span>`;
+  topbar.insertAdjacentHTML('beforeend', badge);
+}
+
+// ══ TEACHER UI ADJUSTMENTS ══
+function applyTeacherUI() {
+  const cls = currentClassName;
+
+  // 1. Class selects: set value and disable (single option, locked)
+  ['resultClass','schemeClass','sClass','subjectClass','bulkClass'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Replace with a locked display — single option only
+    el.innerHTML = '';
+    const o = document.createElement('option');
+    o.value = cls; o.textContent = cls; el.appendChild(o);
+    el.value = cls;
+    el.disabled = true;
+    el.style.opacity = '1';
+    el.style.background = 'var(--bg)';
+  });
+
+  // Hide the class selector wrapper in Subjects tab (no need for a label)
+  const subjectClassWrapper = document.getElementById('subjectClass')?.closest('.card');
+  if (subjectClassWrapper) subjectClassWrapper.style.display = 'none';
+
+  // Hide class selector row in Scheme tab
+  const schemeClassRow = document.getElementById('schemeClass')?.closest('.form-group');
+  if (schemeClassRow) schemeClassRow.style.display = 'none';
+
+  // Hide "Enable All / Disable All" buttons — teacher only controls their class
+  const visButtons = document.querySelector('.admin-topbar ~ * .card .card-header div[style*="display:flex;gap:8px"]');
+  // Fallback: hide by finding buttons containing "Enable All"
+  document.querySelectorAll('button').forEach(btn => {
+    if (btn.textContent.trim() === 'Enable All' || btn.textContent.trim() === 'Disable All') {
+      btn.style.display = 'none';
+    }
+  });
+
+  // Students tab: skip grid, go straight to class list
+  document.getElementById('classGridView').style.display    = 'none';
+  document.getElementById('classStudentView').style.display = 'block';
+  document.getElementById('classStudentTitle').textContent  = cls;
+  // Hide the "← All Classes" back button
+  const backBtn = document.querySelector('.class-back');
+  if (backBtn) backBtn.style.display = 'none';
+
+  // Trigger dependent loads that normally fire on dropdown change
+  loadSchemeSubjects();
+  loadSubjectsForClassTeacher();
+  loadBulkSubjects();
 }
 
 // ══ TABS ══
@@ -582,15 +667,30 @@ function switchTab(tab) {
   document.getElementById('nav-'+tab).classList.add('active');
   const mn = document.getElementById('mnav-'+tab);
   if (mn) mn.classList.add('active');
+
+  // For teachers: auto-trigger data loads when switching tabs
+  if (currentRole === 'teacher') {
+    if (tab === 'results') { loadResultStudents(); loadBulkSubjects(); }
+    if (tab === 'subjects') loadSubjectsForClassTeacher();
+    if (tab === 'scheme')   loadSchemeSubjects();
+  }
 }
 
 // ══ STUDENTS ══
 let _activeClass = ''; // currently viewed class in students tab
 
 async function loadAllStudents() {
-  const snap = await db.collection('students').get();
+  let query = db.collection('students');
+  if (currentRole === 'teacher') {
+    query = query.where('currentClass', '==', currentClassName);
+  }
+  const snap = await query.get();
   allStudents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderClassGrid();
+  if (currentRole === 'headteacher') renderClassGrid();
+  else {
+    _activeClass = currentClassName;
+    renderStudentList();
+  }
 }
 
 function renderClassGrid() {
@@ -656,10 +756,18 @@ function openAddStudent() {
   document.getElementById('studentModalTitle').textContent = 'Add New Student';
   ['sFullName','sAge','sYear'].forEach(id => document.getElementById(id).value='');
   document.getElementById('sGender').value='';
-  document.getElementById('sClass').value='';
   document.getElementById('generatedBox').style.display='none';
   document.getElementById('editIdRow').style.display='none';
   document.getElementById('saveStudentBtn').textContent='Preview ID & PIN →';
+
+  // For teacher: lock class to their own class
+  if (currentRole === 'teacher') {
+    document.getElementById('sClass').value = currentClassName;
+    document.getElementById('sClass').disabled = true;
+  } else {
+    document.getElementById('sClass').disabled = false;
+    document.getElementById('sClass').value = '';
+  }
   openModal('studentModal');
 }
 
@@ -677,7 +785,13 @@ function openEditStudent(id) {
   document.getElementById('generatedBox').style.display='none';
   document.getElementById('editIdRow').style.display='block';
   document.getElementById('editIdDisplay').value = id;
-  document.getElementById('saveStudentBtn').textContent='<svg class="icon-svg" aria-hidden="true"><use href="#ic-save"/></svg> Save Changes';
+  document.getElementById('saveStudentBtn').textContent='Save Changes';
+  // For teacher: lock class to their own class
+  if (currentRole === 'teacher') {
+    document.getElementById('sClass').disabled = true;
+  } else {
+    document.getElementById('sClass').disabled = false;
+  }
   openModal('studentModal');
 }
 
@@ -749,7 +863,8 @@ async function deleteStudent(id, name) {
 
 // ══ RESULTS — Student List ══
 async function loadResultStudents() {
-  const cls = document.getElementById('resultClass').value;
+  const cls = (currentRole === 'teacher') ? currentClassName : document.getElementById('resultClass').value;
+  if (currentRole === 'teacher') document.getElementById('resultClass').value = cls;
   const container = document.getElementById('resultStudentList');
   if (!cls) { container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-muted);">Select a class.</div>'; return; }
   const students = allStudents.filter(s => s.currentClass===cls);
@@ -818,7 +933,7 @@ async function openLowerResultModal(studentId, className, studentName) {
     if (!snap.empty) {
       const r = snap.docs[0].data();
       subjects.forEach(s => {
-        const sc = r.scores?.[fkey(s)] || {};
+        const sc = r.scores?.[s] || {};
         const ca1El  = document.getElementById(`ls_ca1_${sanitize(s)}`);
         const ca2El  = document.getElementById(`ls_ca2_${sanitize(s)}`);
         const examEl = document.getElementById(`ls_exam_${sanitize(s)}`);
@@ -833,6 +948,7 @@ async function openLowerResultModal(studentId, className, studentName) {
       document.getElementById('lr_termEnd').value      = r.termEndingDate||'';
       document.getElementById('lr_resumption').value   = r.resumptionDate||'';
       document.getElementById('lr_teacherName').value  = r.teacherName||'';
+      document.getElementById('lr_headName').value      = r.headTeacherName||'';
       document.getElementById('lr_teacherRemark').value= r.teacherRemark||'';
       document.getElementById('lr_headRemark').value   = r.headTeacherRemark||'';
       if (r.traits) Object.entries(r.traits).forEach(([k,v]) => {
@@ -891,7 +1007,7 @@ async function saveLowerResult() {
     const ca1  = Number(ca1El?.value||0);
     const ca2  = Number(ca2El?.value||0);
     const exam = Number(examEl?.value||0);
-    scores[fkey(s)]  = { ca1, ca2, exam, total: computeTotal(ca1, ca2, exam) };
+    scores[s]  = { ca1, ca2, exam, total: computeTotal(ca1, ca2, exam) };
   });
 
   const enteredSubjects = Object.keys(scores);
@@ -922,6 +1038,7 @@ async function saveLowerResult() {
     termEndingDate:    document.getElementById('lr_termEnd').value,
     resumptionDate:    document.getElementById('lr_resumption').value,
     teacherName:       document.getElementById('lr_teacherName').value.trim(),
+    headTeacherName:   document.getElementById('lr_headName').value.trim(),
     teacherRemark:     document.getElementById('lr_teacherRemark').value.trim(),
     headTeacherRemark: document.getElementById('lr_headRemark').value.trim(),
     scores, traits, activities, average, passFail,
@@ -940,9 +1057,9 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
   const docId = `${thisStudentId}_${className}_${session}_${term}`.replace(/[\s/]/g,'_');
   await db.collection('results').doc(docId).set(resultData);
 
-  const snap = await db.collection('results').where('className','==',className).get();
-  const allResultDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    .filter(d => d.term === term && d.session === session);
+  const snap = await db.collection('results')
+    .where('className','==',className).where('term','==',term).where('session','==',session).get();
+  const allResultDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   const subjects = await getSubjectsForClass(className);
 
   // Overall class average and positions
@@ -959,7 +1076,7 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
   // Subject stats: highest, lowest, positions
   subjects.forEach(subj => {
     const subjectTotals = allResultDocs
-      .map(r => ({ id: r.id, total: r.scores?.[fkey(subj)]?.total||0 }))
+      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
@@ -970,10 +1087,10 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
       batch.update(db.collection('results').doc(x.id), {
-        [`subjectHighest.${fkey(subj)}`]: highest,
-        [`subjectLowest.${fkey(subj)}`]:  lowest,
-        [`subjectClassAvg.${fkey(subj)}`]: subjectAvg,
-        [`subjectPositions.${fkey(subj)}`]: sp
+        [`subjectHighest.${subj}`]: highest,
+        [`subjectLowest.${subj}`]:  lowest,
+        [`subjectClassAvg.${subj}`]: subjectAvg,
+        [`subjectPositions.${subj}`]: sp
       });
     });
   });
@@ -985,7 +1102,6 @@ async function openUpperResultModal(studentId, className, studentName) {
   document.getElementById('upperResultTitle').textContent = `${studentName} — ${className} Result`;
   const subjects = await getSubjectsForClass(className);
 
-  // Subject scores
   document.getElementById('upperScoresContainer').innerHTML = subjects.map(subj => `
     <div class="subject-score-section">
       <h4>${subj}</h4>
@@ -997,22 +1113,7 @@ async function openUpperResultModal(studentId, className, studentName) {
     </div>
   `).join('');
 
-  // Traits
-  const traits = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
-  document.getElementById('ur_traitsContainer').innerHTML = traits.map(t =>
-    `<div class="star-input-row">
-       <label>${t}</label>
-       <div class="star-btns" id="ur_trait_${sanitize(t)}">
-         ${[1,2,3,4,5].map(i=>`<button type="button" onclick="setStar('ur_trait_${sanitize(t)}',${i})" data-val="${i}">★</button>`).join('')}
-       </div>
-     </div>`
-  ).join('');
-
-  // Activities — reset and add 3 blank rows
-  document.getElementById('ur_activitiesContainer').innerHTML = '';
-  addUpperActivity(); addUpperActivity(); addUpperActivity();
-
-  // Load existing result if any
+  // Load existing
   const term    = document.getElementById('resultTerm').value;
   const session = document.getElementById('resultSession').value;
   try {
@@ -1022,7 +1123,7 @@ async function openUpperResultModal(studentId, className, studentName) {
     if (!snap.empty) {
       const r = snap.docs[0].data();
       subjects.forEach(s => {
-        const sc = r.scores?.[fkey(s)]||{};
+        const sc = r.scores?.[s]||{};
         const ca1El  = document.getElementById(`us_ca1_${sanitize(s)}`);
         const ca2El  = document.getElementById(`us_ca2_${sanitize(s)}`);
         const exEl   = document.getElementById(`us_exam_${sanitize(s)}`);
@@ -1031,54 +1132,15 @@ async function openUpperResultModal(studentId, className, studentName) {
         if(exEl)  exEl.value  = sc.exam||'';
       });
       document.getElementById('ur_age').value           = r.ageAtEndOfTerm||'';
-      document.getElementById('ur_conduct').value       = r.conductRating||5;
       document.getElementById('ur_schoolDays').value    = r.schoolDays||'';
       document.getElementById('ur_daysAttended').value  = r.daysAttended||'';
-      document.getElementById('ur_daysAbsent').value    = r.daysAbsent||'';
-      document.getElementById('ur_termEnd').value       = r.termEndingDate||'';
-      document.getElementById('ur_resumption').value    = r.resumptionDate||'';
       document.getElementById('ur_teacherName').value   = r.teacherName||'';
       document.getElementById('ur_principalName').value = r.principalName||'';
       document.getElementById('ur_teacherRemark').value = r.teacherRemark||'';
       document.getElementById('ur_principalRemark').value = r.principalRemark||'';
-      // Load traits
-      if (r.traits) Object.entries(r.traits).forEach(([k,v]) => {
-        setStar(`ur_trait_${k}`, v);
-      });
-      // Load activities
-      if (r.activities?.length) {
-        document.getElementById('ur_activitiesContainer').innerHTML = '';
-        r.activities.forEach(a => {
-          const i = Date.now() + Math.random();
-          document.getElementById('ur_activitiesContainer').insertAdjacentHTML('beforeend', `
-            <div class="activity-entry" id="uract_${i}">
-              <input class="form-control" placeholder="Activity name" id="uractName_${i}" value="${a.name||''}"/>
-              <div class="star-btns" id="uractStar_${i}">
-                ${[1,2,3,4,5].map(n=>`<button type="button" onclick="setStar('uractStar_${i}',${n})" data-val="${n}">★</button>`).join('')}
-              </div>
-              <button class="btn btn-danger btn-sm" onclick="document.getElementById('uract_${i}').remove()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-x"/></svg></button>
-            </div>
-          `);
-          setStar(`uractStar_${i}`, a.rating||0);
-        });
-      }
     }
-  } catch(e) { console.error('Load upper result error:', e); }
+  } catch(e) {}
   openModal('upperResultModal');
-}
-
-function addUpperActivity() {
-  const c = document.getElementById('ur_activitiesContainer');
-  const i = Date.now() + Math.random();
-  c.insertAdjacentHTML('beforeend', `
-    <div class="activity-entry" id="uract_${i}">
-      <input class="form-control" placeholder="Activity name (e.g. Football)" id="uractName_${i}"/>
-      <div class="star-btns" id="uractStar_${i}">
-        ${[1,2,3,4,5].map(n=>`<button type="button" onclick="setStar('uractStar_${i}',${n})" data-val="${n}">★</button>`).join('')}
-      </div>
-      <button class="btn btn-danger btn-sm" onclick="document.getElementById('uract_${i}').remove()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-x"/></svg></button>
-    </div>
-  `);
 }
 
 async function saveUpperResult() {
@@ -1090,54 +1152,35 @@ async function saveUpperResult() {
 
   if (!session) return showToast('Enter the session.','error');
 
-  // Scores
   const scores = {};
   subjects.forEach(s => {
     const ca1El  = document.getElementById(`us_ca1_${sanitize(s)}`);
     const ca2El  = document.getElementById(`us_ca2_${sanitize(s)}`);
     const examEl = document.getElementById(`us_exam_${sanitize(s)}`);
     const hasAny = (ca1El?.value||'') !== '' || (ca2El?.value||'') !== '' || (examEl?.value||'') !== '';
-    if (!hasAny) return;
+    if (!hasAny) return; // skip subjects with no scores entered
     const ca1  = Number(ca1El?.value||0);
     const ca2  = Number(ca2El?.value||0);
     const exam = Number(examEl?.value||0);
-    scores[fkey(s)]  = { ca1, ca2, exam, total: computeTotal(ca1,ca2,exam) };
+    scores[s]  = { ca1, ca2, exam, total: computeTotal(ca1,ca2,exam) };
   });
 
   const enteredSubjects = Object.keys(scores);
   if (!enteredSubjects.length) return showToast('Enter at least one subject score.','error');
-  const totals   = enteredSubjects.map(s => scores[s].total);
-  const average  = Math.round(totals.reduce((a,b)=>a+b,0) / totals.length);
-  const passFail = average >= 40 ? 'Pass' : 'Fail';
-
-  // Traits
-  const traitNames = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
-  const traits = {};
-  traitNames.forEach(t => { traits[sanitize(t)] = getStarValue(`ur_trait_${sanitize(t)}`); });
-
-  // Activities
-  const activities = [];
-  document.querySelectorAll('#ur_activitiesContainer .activity-entry').forEach(row => {
-    const nameEl = row.querySelector('input');
-    const starEl = row.querySelector('.star-btns');
-    const name   = nameEl?.value?.trim();
-    if (name) activities.push({ name, rating: parseInt(starEl?.dataset?.value||0) });
-  });
+  const totals    = enteredSubjects.map(s => scores[s].total);
+  const average   = Math.round(totals.reduce((a,b)=>a+b,0) / totals.length);
+  const passFail  = average >= 40 ? 'Pass' : 'Fail';
 
   const resultData = {
     studentId, className, term, session,
-    ageAtEndOfTerm:    Number(document.getElementById('ur_age').value)||0,
-    conductRating:     Number(document.getElementById('ur_conduct').value),
-    schoolDays:        Number(document.getElementById('ur_schoolDays').value)||0,
-    daysAttended:      Number(document.getElementById('ur_daysAttended').value)||0,
-    daysAbsent:        Number(document.getElementById('ur_daysAbsent').value)||0,
-    termEndingDate:    document.getElementById('ur_termEnd').value,
-    resumptionDate:    document.getElementById('ur_resumption').value,
-    teacherName:       document.getElementById('ur_teacherName').value.trim(),
-    principalName:     document.getElementById('ur_principalName').value.trim(),
-    teacherRemark:     document.getElementById('ur_teacherRemark').value.trim(),
-    principalRemark:   document.getElementById('ur_principalRemark').value.trim(),
-    scores, traits, activities, average, passFail,
+    ageAtEndOfTerm: Number(document.getElementById('ur_age').value)||0,
+    schoolDays:     Number(document.getElementById('ur_schoolDays').value)||0,
+    daysAttended:   Number(document.getElementById('ur_daysAttended').value)||0,
+    teacherName:    document.getElementById('ur_teacherName').value.trim(),
+    principalName:  document.getElementById('ur_principalName').value.trim(),
+    teacherRemark:  document.getElementById('ur_teacherRemark').value.trim(),
+    principalRemark:document.getElementById('ur_principalRemark').value.trim(),
+    scores, average, passFail,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
@@ -1153,9 +1196,9 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
   await db.collection('results').doc(docId).set(resultData);
 
   // All results for this class/term/session
-  const snap = await db.collection('results').where('className','==',className).get();
-  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    .filter(d => d.term === term && d.session === session);
+  const snap = await db.collection('results')
+    .where('className','==',className).where('term','==',term).where('session','==',session).get();
+  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   const subjects = await getSubjectsForClass(className);
 
   // Class average (overall)
@@ -1174,21 +1217,19 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
   // Subject stats: highest, lowest, subject positions
   subjects.forEach(subj => {
     const subjectTotals = allDocs
-      .map(r => ({ id: r.id, total: r.scores?.[fkey(subj)]?.total||0 }))
+      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
-    const highest    = subjectTotals[0].total;
-    const lowest     = subjectTotals[subjectTotals.length-1].total;
-    const subjectAvg = Math.round(subjectTotals.reduce((s,x)=>s+x.total,0)/subjectTotals.length);
+    const highest = subjectTotals[0].total;
+    const lowest  = subjectTotals[subjectTotals.length-1].total;
     let sp = 1;
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
       batch.update(db.collection('results').doc(x.id), {
-        [`subjectHighest.${fkey(subj)}`]: highest,
-        [`subjectLowest.${fkey(subj)}`]:  lowest,
-        [`subjectClassAvg.${fkey(subj)}`]: subjectAvg,
-        [`subjectPositions.${fkey(subj)}`]: sp
+        [`subjectHighest.${subj}`]: highest,
+        [`subjectLowest.${subj}`]:  lowest,
+        [`subjectPositions.${subj}`]: sp
       });
     });
   });
@@ -1198,7 +1239,8 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
 
 // ══ SCHEME ══
 async function loadSchemeSubjects() {
-  const cls = document.getElementById('schemeClass').value;
+  const cls = (currentRole === 'teacher') ? currentClassName : document.getElementById('schemeClass').value;
+  if (currentRole === 'teacher') document.getElementById('schemeClass').value = cls;
   const sel = document.getElementById('schemeSubject');
   sel.innerHTML='<option value="">— Select Subject —</option>';
   if (!cls) return;
@@ -1288,7 +1330,8 @@ function switchResultMode(mode) {
 
 // ══ BULK ENTRY ══
 async function loadBulkSubjects() {
-  const cls = document.getElementById('bulkClass').value;
+  const cls = (currentRole === 'teacher') ? currentClassName : document.getElementById('bulkClass').value;
+  if (currentRole === 'teacher') document.getElementById('bulkClass').value = cls;
   const sel = document.getElementById('bulkSubject');
   sel.innerHTML = '<option value="">— Select Subject —</option>';
   document.getElementById('bulkGridCard').style.display  = 'none';
@@ -1331,15 +1374,21 @@ async function loadBulkGrid() {
   // Fetch existing scores for this class/term/session to pre-fill
   let existingResults = {};
   try {
-    const snap = await db.collection('results').where('className','==',cls).get();
-    snap.docs.filter(d => d.data().term===term && d.data().session===session)
-      .forEach(d => { const data = d.data(); existingResults[data.studentId] = data; });
+    const snap = await db.collection('results')
+      .where('className','==',cls)
+      .where('term','==',term)
+      .where('session','==',session)
+      .get();
+    snap.docs.forEach(d => {
+      const data = d.data();
+      existingResults[data.studentId] = data;
+    });
   } catch(e) { console.warn('Could not pre-fetch results:', e); }
 
   // Build table rows
   const tbody = document.getElementById('bulkGridBody');
   tbody.innerHTML = students.map((s, idx) => {
-    const existing = existingResults[s.id]?.scores?.[fkey(subject)] || {};
+    const existing = existingResults[s.id]?.scores?.[subject] || {};
     const ca1  = existing.ca1  ?? '';
     const ca2  = existing.ca2  ?? '';
     const exam = existing.exam ?? '';
@@ -1394,11 +1443,10 @@ async function saveBulkResults() {
 
   try {
     // Step 1: fetch all existing results for this class/term/session
-    const existingSnap = await db.collection('results').where('className','==',cls).get();
-    // Filter in JS to avoid composite index requirement
+    const existingSnap = await db.collection('results')
+      .where('className','==',cls).where('term','==',term).where('session','==',session).get();
     const existingMap = {};
-    existingSnap.docs.filter(d => d.data().term===term && d.data().session===session)
-      .forEach(d => { existingMap[d.data().studentId] = { id: d.id, ...d.data() }; });
+    existingSnap.docs.forEach(d => { existingMap[d.data().studentId] = { id: d.id, ...d.data() }; });
 
     // Step 2: write updated scores for each student
     const batch = db.batch();
@@ -1422,7 +1470,7 @@ async function saveBulkResults() {
       // Merge into existing doc so we don't wipe traits/remarks/attendance
       batch.set(ref, {
         studentId: s.id, className: cls, term, session,
-        [`scores.${fkey(subject)}`]: { ca1, ca2, exam, total },
+        [`scores.${subject}`]: { ca1, ca2, exam, total },
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
     });
@@ -1442,9 +1490,9 @@ async function saveBulkResults() {
 
 // Recompute overall positions, averages, and subject stats after any save
 async function recomputeClassStats(cls, term, session) {
-  const snap = await db.collection('results').where('className','==',cls).get();
-  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    .filter(d => d.term === term && d.session === session);
+  const snap = await db.collection('results')
+    .where('className','==',cls).where('term','==',term).where('session','==',session).get();
+  const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   const subjects = await getSubjectsForClass(cls);
 
   // Recompute each student's overall average from all their scores
@@ -1452,7 +1500,7 @@ async function recomputeClassStats(cls, term, session) {
   allDocs.forEach(r => {
     const enteredSubjects = Object.keys(r.scores||{});
     if (!enteredSubjects.length) return;
-    const totals  = enteredSubjects.map(s => r.scores[fkey(s)]?.total||0);
+    const totals  = enteredSubjects.map(s => r.scores[s]?.total||0);
     const average = Math.round(totals.reduce((a,b)=>a+b,0)/totals.length);
     const passFail = average >= 40 ? 'Pass' : 'Fail';
     batch1.update(db.collection('results').doc(r.id), { average, passFail });
@@ -1460,9 +1508,9 @@ async function recomputeClassStats(cls, term, session) {
   await batch1.commit();
 
   // Re-fetch with updated averages
-  const snap2 = await db.collection('results').where('className','==',cls).get();
-  const allDocs2 = snap2.docs.map(d => ({ id: d.id, ...d.data() }))
-    .filter(d => d.term === term && d.session === session);
+  const snap2   = await db.collection('results')
+    .where('className','==',cls).where('term','==',term).where('session','==',session).get();
+  const allDocs2 = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
 
   const classAvg = allDocs2.length
     ? Math.round(allDocs2.reduce((s,r)=>s+(r.average||0),0)/allDocs2.length) : 0;
@@ -1477,7 +1525,7 @@ async function recomputeClassStats(cls, term, session) {
 
   subjects.forEach(subj => {
     const subjectTotals = allDocs2
-      .map(r => ({ id: r.id, total: r.scores?.[fkey(subj)]?.total||0 }))
+      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
@@ -1488,10 +1536,10 @@ async function recomputeClassStats(cls, term, session) {
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
       batch2.update(db.collection('results').doc(x.id), {
-        [`subjectHighest.${fkey(subj)}`]: highest,
-        [`subjectLowest.${fkey(subj)}`]:  lowest,
-        [`subjectClassAvg.${fkey(subj)}`]: subjectAvg,
-        [`subjectPositions.${fkey(subj)}`]: sp
+        [`subjectHighest.${subj}`]: highest,
+        [`subjectLowest.${subj}`]:  lowest,
+        [`subjectClassAvg.${subj}`]: subjectAvg,
+        [`subjectPositions.${subj}`]: sp
       });
     });
   });
@@ -1512,7 +1560,8 @@ async function loadVisibility() {
 function renderVisibilityToggles() {
   const container = document.getElementById('visibilityToggles');
   if (!container) return;
-  container.innerHTML = CLASSES.map(cls => {
+  const classesToShow = (currentRole === 'teacher') ? [currentClassName] : CLASSES;
+  container.innerHTML = classesToShow.map(cls => {
     const isOn = _visibility[cls] !== false; // default ON if not set
     return `
       <div class="vis-toggle-row">
@@ -1553,6 +1602,20 @@ async function setAllVisibility(isOn) {
 // ══ SUBJECTS MANAGER ══
 let _currentSubjectClass = '';
 let _currentSubjects = [];
+
+// Called during teacher init to auto-load their class subjects without a dropdown
+async function loadSubjectsForClassTeacher() {
+  const cls = currentClassName;
+  if (!cls) return;
+  _currentSubjectClass = cls;
+  const card = document.getElementById('subjectManagerCard');
+  if (card) card.style.display = 'block';
+  const titleEl = document.getElementById('subjectManagerTitle');
+  if (titleEl) titleEl.textContent = cls + ' — Subjects';
+  invalidateSubjectsCache(cls);
+  _currentSubjects = await getSubjectsForClass(cls);
+  renderSubjectList();
+}
 
 async function loadSubjectsForClass() {
   const cls = document.getElementById('subjectClass').value;
@@ -1624,8 +1687,6 @@ async function removeSubject(name) {
 
 // ══ HELPERS ══
 function sanitize(str) { return str.replace(/[\s&\/]/g,'_').toLowerCase(); }
-// Safe Firestore field key — replaces chars not allowed in Firestore field names
-function fkey(str) { return str.replace(/\//g,'_').replace(/&/g,'and'); }
 function openModal(id)  { document.getElementById(id).style.display='flex'; }
 function closeModal(id) { document.getElementById(id).style.display='none'; }
 document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.style.display='none'; }));
