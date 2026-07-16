@@ -515,6 +515,31 @@
       <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subject Scores (CA1/20 + CA2/20 + Exam/60)</div>
       <div id="upperScoresContainer"></div>
 
+      <!-- Optional Character Assessment -->
+      <div style="margin:18px 0 6px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;color:var(--primary);">
+          <input type="checkbox" id="ur_showCharacter" onchange="toggleUpperCharacter()" style="width:16px;height:16px;cursor:pointer;"/>
+          <svg class="icon-svg" aria-hidden="true"><use href="#ic-star"/></svg> Include Character Assessment <span style="font-weight:400;font-size:0.8rem;color:var(--text-muted);">(optional)</span>
+        </label>
+      </div>
+      <div id="ur_characterSection" style="display:none;">
+        <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-star"/></svg> Character Assessment</div>
+        <div id="ur_traitsContainer"></div>
+      </div>
+
+      <!-- Optional Extra-Curricular Activities -->
+      <div style="margin:18px 0 6px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;color:var(--primary);">
+          <input type="checkbox" id="ur_showActivities" onchange="toggleUpperActivities()" style="width:16px;height:16px;cursor:pointer;"/>
+          <svg class="icon-svg" aria-hidden="true"><use href="#ic-target"/></svg> Include Extra-Curricular Activities <span style="font-weight:400;font-size:0.8rem;color:var(--text-muted);">(optional)</span>
+        </label>
+      </div>
+      <div id="ur_activitiesSection" style="display:none;">
+        <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-target"/></svg> Extra-Curricular Activities</div>
+        <div id="ur_activitiesContainer"></div>
+        <button class="btn btn-outline btn-sm" onclick="addUpperActivity()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-plus"/></svg> Add Activity</button>
+      </div>
+
       <!-- Remarks -->
       <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-message"/></svg> Remarks</div>
       <div class="two-col">
@@ -635,14 +660,8 @@ function applyTeacherUI() {
   const schemeClassRow = document.getElementById('schemeClass')?.closest('.form-group');
   if (schemeClassRow) schemeClassRow.style.display = 'none';
 
-  // Hide "Enable All / Disable All" buttons — teacher only controls their class
-  const visButtons = document.querySelector('.admin-topbar ~ * .card .card-header div[style*="display:flex;gap:8px"]');
-  // Fallback: hide by finding buttons containing "Enable All"
-  document.querySelectorAll('button').forEach(btn => {
-    if (btn.textContent.trim() === 'Enable All' || btn.textContent.trim() === 'Disable All') {
-      btn.style.display = 'none';
-    }
-  });
+  // Teachers see only their own class toggle — Enable All / Disable All
+  // are still shown but will only affect their class via renderVisibilityToggles
 
   // Students tab: skip grid, go straight to class list
   document.getElementById('classGridView').style.display    = 'none';
@@ -655,7 +674,6 @@ function applyTeacherUI() {
   // Trigger dependent loads that normally fire on dropdown change
   loadSchemeSubjects();
   loadSubjectsForClassTeacher();
-  loadBulkSubjects();
 }
 
 // ══ TABS ══
@@ -670,7 +688,7 @@ function switchTab(tab) {
 
   // For teachers: auto-trigger data loads when switching tabs
   if (currentRole === 'teacher') {
-    if (tab === 'results') { loadResultStudents(); loadBulkSubjects(); }
+    if (tab === 'results') loadResultStudents();
     if (tab === 'subjects') loadSubjectsForClassTeacher();
     if (tab === 'scheme')   loadSchemeSubjects();
   }
@@ -1076,7 +1094,11 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
   // Subject stats: highest, lowest, positions
   subjects.forEach(subj => {
     const subjectTotals = allResultDocs
-      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
+      .map(r => {
+        const sc = r.scores?.[subj] || {};
+        const total = computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
+        return { id: r.id, total };
+      })
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
@@ -1095,6 +1117,112 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
     });
   });
   await batch.commit();
+}
+
+const UPPER_TRAITS = [
+  'Behaviour','Punctuality','Staff Relationship','Politeness',
+  'Neatness','Obedience','Adjustment in School','Behaviour with Peers'
+];
+
+function toggleUpperCharacter() {
+  const show = document.getElementById('ur_showCharacter').checked;
+  document.getElementById('ur_characterSection').style.display = show ? 'block' : 'none';
+  if (show && !document.getElementById('ur_traitsContainer').innerHTML) {
+    renderUpperTraits({});
+  }
+}
+
+function toggleUpperActivities() {
+  const show = document.getElementById('ur_showActivities').checked;
+  document.getElementById('ur_activitiesSection').style.display = show ? 'block' : 'none';
+  if (show && !document.getElementById('ur_activitiesContainer').innerHTML) {
+    renderUpperActivities([]);
+  }
+}
+
+function renderUpperTraits(savedTraits) {
+  const c = document.getElementById('ur_traitsContainer');
+  if (!c) return;
+  c.innerHTML = UPPER_TRAITS.map(trait => {
+    const val = savedTraits[trait] || 0;
+    const stars = [1,2,3,4,5].map(i =>
+      `<span class="star-btn${i<=val?' active':''}" data-trait="${trait}" data-val="${i}"
+        onclick="setUpperTrait('${trait}',${i})" style="font-size:1.4rem;cursor:pointer;color:${i<=val?'#c8963e':'#ddd'};">★</span>`
+    ).join('');
+    return `<div class="trait-row" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--border);">
+      <span style="font-size:0.9rem;">${trait}</span>
+      <div id="ur_trait_${trait.replace(/\s/g,'_')}">${stars}</div>
+    </div>`;
+  }).join('');
+}
+
+function setUpperTrait(trait, val) {
+  const container = document.getElementById(`ur_trait_${trait.replace(/\s/g,'_')}`);
+  if (!container) return;
+  container.querySelectorAll('.star-btn').forEach(s => {
+    const v = parseInt(s.dataset.val);
+    s.style.color = v <= val ? '#c8963e' : '#ddd';
+    s.classList.toggle('active', v <= val);
+  });
+}
+
+function getUpperTraits() {
+  const traits = {};
+  UPPER_TRAITS.forEach(trait => {
+    const container = document.getElementById(`ur_trait_${trait.replace(/\s/g,'_')}`);
+    if (!container) return;
+    const active = container.querySelectorAll('.star-btn.active');
+    traits[trait] = active.length;
+  });
+  return traits;
+}
+
+function renderUpperActivities(saved) {
+  const c = document.getElementById('ur_activitiesContainer');
+  if (!c) return;
+  c.innerHTML = '';
+  (saved.length ? saved : [{ name:'', rating:0 }]).forEach(a => addUpperActivityRow(a.name, a.rating));
+}
+
+function addUpperActivity() {
+  addUpperActivityRow('', 0);
+}
+
+function addUpperActivityRow(name='', rating=0) {
+  const c = document.getElementById('ur_activitiesContainer');
+  if (!c) return;
+  const div = document.createElement('div');
+  div.className = 'activity-entry';
+  div.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:8px;';
+  const stars = [1,2,3,4,5].map(i =>
+    `<span onclick="setUpperActStar(this,${i})" data-value="${i}"
+      style="font-size:1.3rem;cursor:pointer;color:${i<=rating?'#c8963e':'#ddd'};">★</span>`
+  ).join('');
+  div.innerHTML = `
+    <input class="form-control" placeholder="Activity name" value="${name}" style="flex:1;"/>
+    <div class="act-stars" data-value="${rating}">${stars}</div>
+    <button class="btn btn-sm" onclick="this.parentElement.remove()" style="color:var(--danger);padding:4px 8px;">✕</button>`;
+  c.appendChild(div);
+}
+
+function setUpperActStar(el, val) {
+  const container = el.parentElement;
+  container.dataset.value = val;
+  container.querySelectorAll('span').forEach(s => {
+    s.style.color = parseInt(s.dataset.value) <= val ? '#c8963e' : '#ddd';
+  });
+}
+
+function getUpperActivities() {
+  const activities = [];
+  document.querySelectorAll('#ur_activitiesContainer .activity-entry').forEach(row => {
+    const nameEl = row.querySelector('input');
+    const starEl = row.querySelector('.act-stars');
+    if (nameEl?.value.trim()) {
+      activities.push({ name: nameEl.value.trim(), rating: parseInt(starEl?.dataset?.value||0) });
+    }
+  });
+  return activities;
 }
 
 // ══ UPPER RESULT MODAL ══
@@ -1138,6 +1266,36 @@ async function openUpperResultModal(studentId, className, studentName) {
       document.getElementById('ur_principalName').value = r.principalName||'';
       document.getElementById('ur_teacherRemark').value = r.teacherRemark||'';
       document.getElementById('ur_principalRemark').value = r.principalRemark||'';
+
+      // Load optional character assessment if saved
+      if (r.traits && Object.keys(r.traits).length) {
+        document.getElementById('ur_showCharacter').checked = true;
+        document.getElementById('ur_characterSection').style.display = 'block';
+        renderUpperTraits(r.traits);
+      } else {
+        document.getElementById('ur_showCharacter').checked = false;
+        document.getElementById('ur_characterSection').style.display = 'none';
+        document.getElementById('ur_traitsContainer').innerHTML = '';
+      }
+
+      // Load optional activities if saved
+      if (r.activities && r.activities.length) {
+        document.getElementById('ur_showActivities').checked = true;
+        document.getElementById('ur_activitiesSection').style.display = 'block';
+        renderUpperActivities(r.activities);
+      } else {
+        document.getElementById('ur_showActivities').checked = false;
+        document.getElementById('ur_activitiesSection').style.display = 'none';
+        document.getElementById('ur_activitiesContainer').innerHTML = '';
+      }
+    } else {
+      // Fresh form — reset optional sections
+      document.getElementById('ur_showCharacter').checked = false;
+      document.getElementById('ur_characterSection').style.display = 'none';
+      document.getElementById('ur_traitsContainer').innerHTML = '';
+      document.getElementById('ur_showActivities').checked = false;
+      document.getElementById('ur_activitiesSection').style.display = 'none';
+      document.getElementById('ur_activitiesContainer').innerHTML = '';
     }
   } catch(e) {}
   openModal('upperResultModal');
@@ -1171,6 +1329,12 @@ async function saveUpperResult() {
   const average   = Math.round(totals.reduce((a,b)=>a+b,0) / totals.length);
   const passFail  = average >= 40 ? 'Pass' : 'Fail';
 
+  // Collect optional sections only if checked
+  const includeCharacter  = document.getElementById('ur_showCharacter').checked;
+  const includeActivities = document.getElementById('ur_showActivities').checked;
+  const traits     = includeCharacter  ? getUpperTraits()     : {};
+  const activities = includeActivities ? getUpperActivities() : [];
+
   const resultData = {
     studentId, className, term, session,
     ageAtEndOfTerm: Number(document.getElementById('ur_age').value)||0,
@@ -1180,7 +1344,7 @@ async function saveUpperResult() {
     principalName:  document.getElementById('ur_principalName').value.trim(),
     teacherRemark:  document.getElementById('ur_teacherRemark').value.trim(),
     principalRemark:document.getElementById('ur_principalRemark').value.trim(),
-    scores, average, passFail,
+    scores, traits, activities, average, passFail,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
@@ -1217,7 +1381,11 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
   // Subject stats: highest, lowest, subject positions
   subjects.forEach(subj => {
     const subjectTotals = allDocs
-      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
+      .map(r => {
+        const sc = r.scores?.[subj] || {};
+        const total = computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
+        return { id: r.id, total };
+      })
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
@@ -1500,7 +1668,10 @@ async function recomputeClassStats(cls, term, session) {
   allDocs.forEach(r => {
     const enteredSubjects = Object.keys(r.scores||{});
     if (!enteredSubjects.length) return;
-    const totals  = enteredSubjects.map(s => r.scores[s]?.total||0);
+    const totals  = enteredSubjects.map(s => {
+      const sc = r.scores[s] || {};
+      return computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
+    });
     const average = Math.round(totals.reduce((a,b)=>a+b,0)/totals.length);
     const passFail = average >= 40 ? 'Pass' : 'Fail';
     batch1.update(db.collection('results').doc(r.id), { average, passFail });
@@ -1525,7 +1696,11 @@ async function recomputeClassStats(cls, term, session) {
 
   subjects.forEach(subj => {
     const subjectTotals = allDocs2
-      .map(r => ({ id: r.id, total: r.scores?.[subj]?.total||0 }))
+      .map(r => {
+        const sc = r.scores?.[subj] || {};
+        const total = computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
+        return { id: r.id, total };
+      })
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
