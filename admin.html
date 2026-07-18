@@ -691,6 +691,7 @@ function switchTab(tab) {
     if (tab === 'results') loadResultStudents();
     if (tab === 'subjects') loadSubjectsForClassTeacher();
     if (tab === 'scheme')   loadSchemeSubjects();
+    if (tab === 'bulk')     loadBulkSubjects();
   }
 }
 
@@ -885,18 +886,21 @@ async function loadResultStudents() {
   if (currentRole === 'teacher') document.getElementById('resultClass').value = cls;
   const container = document.getElementById('resultStudentList');
   if (!cls) { container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-muted);">Select a class.</div>'; return; }
+  invalidateSubjectsCache(cls); // always fresh when loading students
   const students = allStudents.filter(s => s.currentClass===cls);
   const isLower  = isNurseryOrLowerPrimary(cls);
   if (!students.length) { container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-muted);">No students in this class.</div>'; return; }
 
-  container.innerHTML = students.map(s => `
+  container.innerHTML = students.map(s => {
+    const safeName = s.fullName.replace(/'/g, "\'");
+    return `
     <div class="s-row">
       <div class="s-avatar">${s.fullName[0].toUpperCase()}</div>
       <div class="s-info"><div class="name">${s.fullName}</div><div class="meta">${s.id}</div></div>
       <span class="result-type-badge ${isLower?'badge-lower':'badge-upper'}">${isLower?'Lower School':'Upper School'}</span>
-      <button class="btn btn-accent btn-sm" onclick="openResultModal('${s.id}','${cls}','${s.fullName}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg> Enter Result</button>
-    </div>
-  `).join('');
+      <button class="btn btn-accent btn-sm" onclick="openResultModal('${s.id}','${cls}','${safeName}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg> Enter Result</button>
+    </div>`;
+  }).join('');
 }
 
 function openResultModal(studentId, className, studentName) {
@@ -1505,7 +1509,13 @@ async function loadBulkSubjects() {
   document.getElementById('bulkGridCard').style.display  = 'none';
   document.getElementById('bulkGridEmpty').style.display = 'none';
   if (!cls) return;
+  // Always invalidate cache so newly added subjects appear immediately
+  invalidateSubjectsCache(cls);
   const subjects = await getSubjectsForClass(cls);
+  if (!subjects.length) {
+    sel.innerHTML = '<option value="">— No subjects set up for this class —</option>';
+    return;
+  }
   subjects.forEach(s => {
     const o = document.createElement('option');
     o.value = s; o.textContent = s;
