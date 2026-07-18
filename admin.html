@@ -891,16 +891,24 @@ async function loadResultStudents() {
   const isLower  = isNurseryOrLowerPrimary(cls);
   if (!students.length) { container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-muted);">No students in this class.</div>'; return; }
 
-  container.innerHTML = students.map(s => {
-    const safeName = s.fullName.replace(/'/g, "\'");
-    return `
+  container.innerHTML = students.map(s => `
     <div class="s-row">
       <div class="s-avatar">${s.fullName[0].toUpperCase()}</div>
       <div class="s-info"><div class="name">${s.fullName}</div><div class="meta">${s.id}</div></div>
       <span class="result-type-badge ${isLower?'badge-lower':'badge-upper'}">${isLower?'Lower School':'Upper School'}</span>
-      <button class="btn btn-accent btn-sm" onclick="openResultModal('${s.id}','${cls}','${safeName}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg> Enter Result</button>
-    </div>`;
-  }).join('');
+      <button class="btn btn-accent btn-sm result-entry-btn"
+        data-id="${s.id}" data-class="${cls}" data-name="${s.fullName.replace(/"/g,'&quot;')}">
+        <svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg> Enter Result
+      </button>
+    </div>`
+  ).join('');
+
+  // Attach click handlers safely via JS — no inline args, no quote issues
+  container.querySelectorAll('.result-entry-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openResultModal(btn.dataset.id, btn.dataset.class, btn.dataset.name);
+    });
+  });
 }
 
 function openResultModal(studentId, className, studentName) {
@@ -1498,6 +1506,7 @@ function switchResultMode(mode) {
   document.getElementById('result-mode-bulk').style.display    = mode==='bulk'    ? 'block' : 'none';
   document.getElementById('rmode-student').classList.toggle('active', mode==='student');
   document.getElementById('rmode-bulk').classList.toggle('active',    mode==='bulk');
+  if (mode === 'bulk') loadBulkSubjects();
 }
 
 // ══ BULK ENTRY ══
