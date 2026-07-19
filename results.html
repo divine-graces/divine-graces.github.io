@@ -334,6 +334,7 @@
         '<div class="info-item"><div class="info-item__label">Class Average</div><div class="info-item__value">'+(r.classAverage||'—')+'%</div></div>'+
       '</div>'+
       '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Subject Results</h3></div><div class="table-wrapper"><table><thead><tr><th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th></tr></thead><tbody>'+subRows+'</tbody></table></div></div>'+
+      upperOptionalHTML(r)+
       '<div class="card"><div class="card-header"><h3>Remarks</h3></div><div class="card-body"><div class="remarks-box"><p><strong>Class Teacher ('+(r.teacherName||'—')+'):</strong> '+(r.teacherRemark||'—')+'</p><p style="margin-top:10px;"><strong>Principal ('+(r.principalName||'—')+'):</strong> '+(r.principalRemark||'—')+'</p></div><div class="action-row no-print" style="margin-top:16px;"><button class="btn btn-primary" onclick="window.print()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-print"/></svg> Print Result</button></div></div></div>';
   }
 
@@ -413,9 +414,63 @@
       '</div>'+
       '<div class="pb-sec">Subject Results</div>'+
       '<table class="pb-tbl"><thead><tr><th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th></tr></thead><tbody>'+subRows+'</tbody></table>'+
+      upperOptionalPrintHTML(r)+
       '<div class="pb-sec">Remarks</div>'+
       '<div class="pb-remark"><b>Class Teacher: '+(r.teacherName||'—')+'</b>'+(r.teacherRemark||'—')+'</div>'+
       '<div class="pb-remark"><b>Principal: '+(r.principalName||'—')+'</b>'+(r.principalRemark||'—')+'</div>';
+  }
+
+
+  /* ── UPPER SCHOOL OPTIONAL SECTIONS ── */
+  const UPPER_TRAITS = ['Behaviour','Punctuality','Staff Relationship','Politeness','Neatness','Obedience','Adjustment in School','Behaviour with Peers'];
+
+  function upperOptionalHTML(r) {
+    let html = '';
+
+    // Character Assessment
+    const traits = r.traits || {};
+    const hasTraits = Object.keys(traits).length > 0;
+    if (hasTraits) {
+      const traitRows = UPPER_TRAITS.map(t => {
+        const val = traits[t] || 0;
+        return '<div class="trait-row"><span class="trait-label">' + t + '</span><span class="star-display">' + starHTML(val) + '</span></div>';
+      }).join('');
+      html += '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Character Assessment</h3></div><div class="card-body">' + traitRows + '</div></div>';
+    }
+
+    // Extra-Curricular Activities
+    const activities = r.activities || [];
+    if (activities.length) {
+      const actRows = activities.map(a =>
+        '<div class="activity-row"><span>' + a.name + '</span><span class="star-display">' + starHTML(a.rating) + '</span></div>'
+      ).join('');
+      html += '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Extra-Curricular Activities</h3></div><div class="card-body">' + actRows + '</div></div>';
+    }
+
+    return html;
+  }
+
+  function upperOptionalPrintHTML(r) {
+    let html = '';
+
+    const traits = r.traits || {};
+    const hasTraits = Object.keys(traits).length > 0;
+    if (hasTraits) {
+      const traitCells = UPPER_TRAITS.map(t =>
+        '<div class="pb-tc"><span>' + t + '</span><span class="pb-stars">' + pStars(traits[t] || 0) + '</span></div>'
+      ).join('');
+      html += '<div class="pb-sec">Character Assessment</div><div class="pb-traits">' + traitCells + '</div>';
+    }
+
+    const activities = r.activities || [];
+    if (activities.length) {
+      const actRows = activities.map(a =>
+        '<div class="pb-act"><span>' + a.name + '</span><span class="pb-stars">' + pStars(a.rating) + '</span></div>'
+      ).join('');
+      html += '<div class="pb-sec">Extra-Curricular Activities</div>' + actRows;
+    }
+
+    return html;
   }
 
   function logout() { sessionStorage.clear(); window.location.href='index.html'; }
