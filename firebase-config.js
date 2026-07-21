@@ -5,12 +5,12 @@
 // ============================================================
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAl8mlQ2xLuDq_4_-tuc4Ue8rL8F2JkmzM",
-  authDomain: "dgss-6134a.firebaseapp.com",
-  projectId: "dgss-6134a",
-  storageBucket: "dgss-6134a.firebasestorage.app",
-  messagingSenderId: "952213777221",
-  appId: "1:952213777221:web:3cd748fb84c3b2e47cec2c"
+  apiKey: "AIzaSyCJQhewNr4GW3gOKCqcac9Lrr_mOJmgmAE",
+  authDomain: "divine-grace-school-ba415.firebaseapp.com",
+  projectId: "divine-grace-school-ba415",
+  storageBucket: "divine-grace-school-ba415.firebasestorage.app",
+  messagingSenderId: "715765687350",
+  appId: "1:715765687350:web:9afff5c2e4a654cd92e497"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -26,6 +26,7 @@ const SCHOOL_LOGO    = "logo.png";
 const PIN_SECRET     = 67;
 
 const CLASSES = [
+  'Pre Nursery',
   'Nursery 1','Nursery 2','Nursery 3',
   'Basic 1','Basic 2','Basic 3',
   'Basic 4','Basic 5','Basic 6',
@@ -64,6 +65,7 @@ function invalidateSubjectsCache(className) {
 
 function isNurseryOrLowerPrimary(className) {
   if (!className) return false;
+  if (className === 'Pre Nursery') return true;
   if (className.startsWith('Nursery')) return true;
   const num = parseInt(className.replace('Basic ',''));
   return num <= 3;

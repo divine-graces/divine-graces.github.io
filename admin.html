@@ -144,6 +144,7 @@
       <a href="#" onclick="switchTab('scheme')" id="nav-scheme"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span> Scheme of Work</a>
       <a href="#" onclick="switchTab('announcements')" id="nav-ann"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span> Announcements</a>
       <a href="notes.html" id="nav-notes"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span> Lesson Notes</a>
+      <a href="#" onclick="switchTab('review')" id="nav-review"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span> Results Review</a>
       <a href="#" onclick="switchTab('termfix')" id="nav-termfix" style="display:none;border-left:3px solid #c8963e;"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg></span> Term Correction</a>
     </nav>
     <div class="sidebar__footer">
@@ -254,21 +255,31 @@
 
       <!-- ── Term Picker Screen ── -->
       <div id="termPickerScreen">
-        <div style="text-align:center;padding:20px 0 30px;">
-          <p style="color:var(--text-muted);margin-bottom:24px;font-size:0.95rem;">Select the term you are entering results for</p>
-          <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
-            <button class="term-pick-btn" onclick="selectResultTerm('Term 1')">
-              <div class="term-pick-num">1</div>
-              <div class="term-pick-label">Term 1</div>
-            </button>
-            <button class="term-pick-btn" onclick="selectResultTerm('Term 2')">
-              <div class="term-pick-num">2</div>
-              <div class="term-pick-label">Term 2</div>
-            </button>
-            <button class="term-pick-btn" onclick="selectResultTerm('Term 3')">
-              <div class="term-pick-num">3</div>
-              <div class="term-pick-label">Term 3</div>
-            </button>
+        <div class="card" style="max-width:480px;margin:0 auto;">
+          <div class="card-body">
+            <h3 style="margin-bottom:4px;color:var(--primary);">Before you continue</h3>
+            <p style="color:var(--text-muted);margin-bottom:20px;font-size:.88rem;">Confirm the session and select a term. This cannot be changed once you start entering results.</p>
+
+            <div class="form-group" style="margin-bottom:20px;">
+              <label class="form-label">Academic Session</label>
+              <input type="text" class="form-control" id="termPickerSession" placeholder="e.g. 2025/2026"/>
+            </div>
+
+            <label class="form-label" style="margin-bottom:12px;display:block;">Select Term</label>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+              <button class="term-pick-btn" onclick="selectResultTerm('Term 1')">
+                <div class="term-pick-num">1</div>
+                <div class="term-pick-label">Term 1</div>
+              </button>
+              <button class="term-pick-btn" onclick="selectResultTerm('Term 2')">
+                <div class="term-pick-num">2</div>
+                <div class="term-pick-label">Term 2</div>
+              </button>
+              <button class="term-pick-btn" onclick="selectResultTerm('Term 3')">
+                <div class="term-pick-num">3</div>
+                <div class="term-pick-label">Term 3</div>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -381,6 +392,91 @@
       </div>
 
       </div> <!-- end resultsMainContent -->
+    </div>
+
+    <!-- ══ RESULTS REVIEW ══ -->
+    <div class="tab-panel" id="tab-review">
+      <div class="page-title">
+        <h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg> Results Review</h1>
+        <p>View class rankings and subject breakdowns</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-body">
+          <div class="two-col">
+            <div class="form-group" id="reviewClassGroup">
+              <label class="form-label">Class</label>
+              <select class="form-control" id="reviewClass" onchange="loadReview()">
+                <option value="">— Select Class —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Session</label>
+              <input type="text" class="form-control" id="reviewSession" placeholder="e.g. 2025/2026" oninput="loadReview()"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Term</label>
+              <select class="form-control" id="reviewTerm" onchange="loadReview()">
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">View by Subject</label>
+              <select class="form-control" id="reviewSubject" onchange="renderReviewTable()">
+                <option value="">— Overall Rankings —</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div id="reviewSummary" style="display:none;margin-bottom:18px;">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-card__value" id="rv_classAvg">—</div><div class="stat-card__label">Class Average</div></div>
+          <div class="stat-card stat-card--accent"><div class="stat-card__value" id="rv_highest">—</div><div class="stat-card__label">Highest Score</div></div>
+          <div class="stat-card"><div class="stat-card__value" id="rv_lowest">—</div><div class="stat-card__label">Lowest Score</div></div>
+          <div class="stat-card stat-card--success"><div class="stat-card__value" id="rv_passed">—</div><div class="stat-card__label">Passed</div></div>
+        </div>
+      </div>
+
+      <!-- Subject summary bar (shown when a subject is selected) -->
+      <div id="reviewSubjectBar" style="display:none;background:var(--primary);color:#fff;border-radius:var(--radius);padding:12px 20px;margin-bottom:18px;display:none;">
+        <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:center;">
+          <span style="font-weight:700;font-size:1rem;" id="rv_subjName"></span>
+          <span>Class Avg: <strong id="rv_subjAvg">—</strong></span>
+          <span>Highest: <strong id="rv_subjHighest">—</strong></span>
+          <span>Lowest: <strong id="rv_subjLowest">—</strong></span>
+        </div>
+      </div>
+
+      <!-- Rankings table -->
+      <div class="card" id="reviewTableCard" style="display:none;">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <h3 id="reviewTableTitle">Class Rankings</h3>
+          <span id="reviewCount" style="font-size:.82rem;color:var(--text-muted);"></span>
+        </div>
+        <div class="table-wrapper">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:var(--primary);color:#fff;">
+                <th style="padding:10px 14px;text-align:center;width:60px;">Position</th>
+                <th style="padding:10px 14px;text-align:left;">Student Name</th>
+                <th style="padding:10px 14px;text-align:center;" id="rv_scoreHeader">Average</th>
+                <th style="padding:10px 14px;text-align:center;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="reviewTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="reviewEmpty" style="display:none;padding:60px;text-align:center;color:var(--text-muted);">
+        <div style="font-size:3rem;margin-bottom:12px;">📊</div>
+        <h3>No results yet</h3>
+        <p>No results have been entered for this class, term and session yet.</p>
+      </div>
     </div>
 
     <!-- ══ TERM CORRECTION ══ -->
@@ -823,6 +919,8 @@ function switchTab(tab) {
 
   // Populate tfClass when switching to termfix
   if (tab === 'termfix') populateTermFixClasses();
+  // Init review tab
+  if (tab === 'review') initReviewTab();
 
   // For teachers: auto-trigger data loads when switching tabs
   if (currentRole === 'teacher') {
@@ -1670,14 +1768,22 @@ async function deleteAnnouncement(id) {
 
 // ══ RESULT MODE SWITCHER ══
 function selectResultTerm(term) {
-  // Set the term in both dropdowns
-  document.getElementById('resultTerm').value = term;
-  document.getElementById('bulkTerm').value   = term;
+  // Validate session
+  const rawSession = document.getElementById('termPickerSession').value.trim();
+  const session    = normaliseSession(rawSession);
+  if (!session) { showToast('Enter the academic session first e.g. 2025/2026', 'error'); return; }
+
+  // Set term and session in all fields
+  document.getElementById('resultTerm').value    = term;
+  document.getElementById('bulkTerm').value      = term;
+  document.getElementById('resultSession').value = session;
+  document.getElementById('bulkSession').value   = session;
+  document.getElementById('termPickerSession').value = session; // normalised
 
   // Show banner and main content, hide picker
   document.getElementById('termPickerScreen').style.display    = 'none';
   document.getElementById('resultsMainContent').style.display  = 'block';
-  document.getElementById('selectedTermLabel').textContent     = '📋  ' + term + ' — ' + document.getElementById('resultSession').value;
+  document.getElementById('selectedTermLabel').textContent     = '📋  ' + term + ' — ' + session;
 
   // Auto-load students/subjects for current mode
   const mode = document.getElementById('rmode-bulk').classList.contains('active') ? 'bulk' : 'student';
@@ -1688,6 +1794,9 @@ function selectResultTerm(term) {
 function resetTermPicker() {
   document.getElementById('termPickerScreen').style.display   = 'block';
   document.getElementById('resultsMainContent').style.display = 'none';
+  // Pre-fill session with current session if empty
+  const sess = document.getElementById('termPickerSession');
+  if (!sess.value) sess.value = getCurrentSession();
   // Clear student list so stale data isn't shown when they return
   document.getElementById('resultStudentList').innerHTML =
     '<div style="padding:30px;text-align:center;color:var(--text-muted);">Select a class above.</div>';
@@ -1932,6 +2041,180 @@ async function recomputeClassStats(cls, term, session) {
     });
   });
   await commitInChunks(upd2);
+}
+
+// ══ RESULTS REVIEW ══
+let _reviewResults  = []; // all result docs for current filter
+let _reviewSubjects = []; // subjects for current class
+
+async function initReviewTab() {
+  // Populate class selector for head teacher, lock for teacher
+  const sel = document.getElementById('reviewClass');
+  if (currentRole === 'teacher') {
+    sel.innerHTML = `<option value="${currentClassName}">${currentClassName}</option>`;
+    sel.value     = currentClassName;
+    sel.disabled  = true;
+    document.getElementById('reviewClassGroup').style.display = 'none';
+  } else {
+    if (sel.options.length <= 1) {
+      CLASSES.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c; o.textContent = c; sel.appendChild(o);
+      });
+    }
+  }
+  // Pre-fill session and term from whatever is currently set
+  document.getElementById('reviewSession').value = getCurrentSession();
+  document.getElementById('reviewTerm').value    = 'Term 3';
+  if (currentRole === 'teacher') await loadReview();
+}
+
+async function loadReview() {
+  const cls     = currentRole === 'teacher' ? currentClassName : document.getElementById('reviewClass').value;
+  const rawSess = document.getElementById('reviewSession').value.trim();
+  const session = normaliseSession(rawSess) || rawSess;
+  const term    = document.getElementById('reviewTerm').value;
+
+  // Reset UI
+  document.getElementById('reviewSummary').style.display      = 'none';
+  document.getElementById('reviewSubjectBar').style.display   = 'none';
+  document.getElementById('reviewTableCard').style.display    = 'none';
+  document.getElementById('reviewEmpty').style.display        = 'none';
+  document.getElementById('reviewSubject').innerHTML          = '<option value="">— Overall Rankings —</option>';
+  _reviewResults  = [];
+  _reviewSubjects = [];
+
+  if (!cls || !session || session.length < 7) return;
+
+  try {
+    const snap = await db.collection('results')
+      .where('className', '==', cls)
+      .where('session',   '==', session)
+      .where('term',      '==', term)
+      .get();
+
+    if (snap.empty) {
+      document.getElementById('reviewEmpty').style.display = 'block';
+      return;
+    }
+
+    _reviewResults  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _reviewSubjects = await getSubjectsForClass(cls);
+
+    // Populate subject dropdown
+    const subjSel = document.getElementById('reviewSubject');
+    _reviewSubjects.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s; subjSel.appendChild(o);
+    });
+
+    renderReviewTable();
+  } catch(e) {
+    console.error(e);
+    showToast('Error loading review data.', 'error');
+  }
+}
+
+function renderReviewTable() {
+  if (!_reviewResults.length) return;
+
+  const cls         = currentRole === 'teacher' ? currentClassName : document.getElementById('reviewClass').value;
+  const subjSel     = document.getElementById('reviewSubject').value;
+  const isOverall   = !subjSel;
+
+  // Show/hide subject bar
+  document.getElementById('reviewSubjectBar').style.display = isOverall ? 'none' : 'flex';
+
+  let rows;
+
+  if (isOverall) {
+    // Sort by overall position
+    const sorted = [..._reviewResults]
+      .filter(r => r.average !== undefined)
+      .sort((a,b) => (a.overallPosition||999) - (b.overallPosition||999));
+
+    // Summary cards
+    const avgs    = sorted.map(r => r.average||0);
+    const passed  = sorted.filter(r => r.passFail === 'Pass').length;
+    document.getElementById('rv_classAvg').textContent  = sorted.length ? Math.round(avgs.reduce((a,b)=>a+b,0)/avgs.length)+'%' : '—';
+    document.getElementById('rv_highest').textContent   = avgs.length ? Math.max(...avgs)+'%' : '—';
+    document.getElementById('rv_lowest').textContent    = avgs.length ? Math.min(...avgs)+'%' : '—';
+    document.getElementById('rv_passed').textContent    = `${passed}/${sorted.length}`;
+    document.getElementById('reviewSummary').style.display = 'block';
+
+    document.getElementById('rv_scoreHeader').textContent = 'Average';
+    document.getElementById('reviewTableTitle').textContent = 'Overall Class Rankings';
+    document.getElementById('reviewCount').textContent = `${sorted.length} student${sorted.length!==1?'s':''}`;
+
+    rows = sorted.map(r => {
+      const name   = escapeHtml(allStudents.find(s=>s.id===r.studentId)?.fullName || r.studentId);
+      const pos    = r.overallPosition ? `#${r.overallPosition}` : '—';
+      const avg    = r.average !== undefined ? `${r.average}%` : '—';
+      const status = r.passFail || '—';
+      const sColor = status === 'Pass' ? 'var(--success,#1a6b3c)' : 'var(--danger,#c0392b)';
+      const posColor = r.overallPosition === 1 ? '#c8963e' : 'var(--primary)';
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 14px;text-align:center;font-weight:800;font-size:1.1rem;color:${posColor};">${pos}</td>
+        <td style="padding:10px 14px;font-weight:600;">${name}</td>
+        <td style="padding:10px 14px;text-align:center;font-weight:700;">${avg}</td>
+        <td style="padding:10px 14px;text-align:center;font-weight:700;color:${sColor};">${status}</td>
+      </tr>`;
+    }).join('');
+
+  } else {
+    // Subject view — sort by subject position
+    const fk = fieldKey(subjSel);
+
+    // Subject summary bar
+    const firstWithSubj = _reviewResults.find(r => r.subjectHighest?.[fk] !== undefined);
+    document.getElementById('rv_subjName').textContent    = subjSel;
+    document.getElementById('rv_subjAvg').textContent     = firstWithSubj?.subjectClassAvg?.[fk] !== undefined ? firstWithSubj.subjectClassAvg[fk] : '—';
+    document.getElementById('rv_subjHighest').textContent = firstWithSubj?.subjectHighest?.[fk] ?? '—';
+    document.getElementById('rv_subjLowest').textContent  = firstWithSubj?.subjectLowest?.[fk]  ?? '—';
+
+    // Build rows sorted by subject position
+    const withScores = _reviewResults
+      .map(r => {
+        const sc    = r.scores?.[subjSel] || r.scores?.[subjSel.trim()] || {};
+        const total = computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
+        const sPos  = r.subjectPositions?.[fk];
+        return { r, total, sPos };
+      })
+      .filter(x => x.total > 0)
+      .sort((a,b) => (a.sPos||999) - (b.sPos||999));
+
+    document.getElementById('rv_scoreHeader').textContent  = `${subjSel} Score`;
+    document.getElementById('reviewTableTitle').textContent = `${subjSel} — Rankings`;
+    document.getElementById('reviewCount').textContent      = `${withScores.length} student${withScores.length!==1?'s':''} with scores`;
+    document.getElementById('reviewSummary').style.display  = 'none';
+
+    rows = withScores.map(({r, total, sPos}) => {
+      const name   = escapeHtml(allStudents.find(s=>s.id===r.studentId)?.fullName || r.studentId);
+      const pos    = sPos ? `#${sPos}` : '—';
+      const {grade, comment} = getGrade(total, cls);
+      const posColor = sPos === 1 ? '#c8963e' : 'var(--primary)';
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 14px;text-align:center;font-weight:800;font-size:1.1rem;color:${posColor};">${pos}</td>
+        <td style="padding:10px 14px;font-weight:600;">${name}</td>
+        <td style="padding:10px 14px;text-align:center;font-weight:700;">${total}/100
+          <span style="font-size:.75rem;color:var(--text-muted);margin-left:4px;">${grade} — ${comment}</span>
+        </td>
+        <td style="padding:10px 14px;text-align:center;color:var(--text-muted);font-size:.82rem;">
+          CA1: ${r.scores?.[subjSel]?.ca1||0} · CA2: ${r.scores?.[subjSel]?.ca2||0} · Exam: ${r.scores?.[subjSel]?.exam||0}
+        </td>
+      </tr>`;
+    }).join('');
+
+    if (!rows) {
+      document.getElementById('reviewEmpty').style.display  = 'block';
+      document.getElementById('reviewTableCard').style.display = 'none';
+      return;
+    }
+  }
+
+  document.getElementById('reviewTableBody').innerHTML = rows;
+  document.getElementById('reviewTableCard').style.display = 'block';
+  document.getElementById('reviewEmpty').style.display     = 'none';
 }
 
 // ══ TERM CORRECTION ══
