@@ -276,7 +276,7 @@
       const ca1 = Number(sc.ca1||0), ca2 = Number(sc.ca2||0), exam = Number(sc.exam||0);
       const total = computeTotal(ca1, ca2, exam);
       const {grade,comment} = getGrade(total, r.className);
-      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[s]||'—')+'</td><td>'+(r.subjectLowest?.[s]||'—')+'</td><td>'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td><span class="badge badge-'+(grade||'F')+'">'+( grade||'F')+'</span></td><td style="color:var(--text-muted);font-size:.82rem;">'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[fieldKey(s)]||'—')+'</td><td>'+(r.subjectLowest?.[fieldKey(s)]||'—')+'</td><td>'+(r.subjectPositions?.[fieldKey(s)]?'#'+r.subjectPositions[fieldKey(s)]:'—')+'</td><td><span class="badge badge-'+(grade||'F')+'">'+( grade||'F')+'</span></td><td style="color:var(--text-muted);font-size:.82rem;">'+comment+'</td></tr>';
     }).join('');
 
     const traitHTML = traits.map(t => {
@@ -317,7 +317,7 @@
       const ca1=Number(sc.ca1||0), ca2=Number(sc.ca2||0), exam=Number(sc.exam||0);
       const total = computeTotal(ca1,ca2,exam);
       const {grade,comment} = getGrade(total, r.className);
-      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[s]||'—')+'</td><td>'+(r.subjectLowest?.[s]||'—')+'</td><td>'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td><span class="badge badge-'+grade+'">'+grade+'</span></td><td style="font-size:.8rem;color:var(--text-muted);">'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[fieldKey(s)]||'—')+'</td><td>'+(r.subjectLowest?.[fieldKey(s)]||'—')+'</td><td>'+(r.subjectPositions?.[fieldKey(s)]?'#'+r.subjectPositions[fieldKey(s)]:'—')+'</td><td><span class="badge badge-'+grade+'">'+grade+'</span></td><td style="font-size:.8rem;color:var(--text-muted);">'+comment+'</td></tr>';
     }).join('');
 
     document.getElementById('resultContent').innerHTML =
@@ -352,7 +352,7 @@
       const ca1 = Number(sc.ca1||0), ca2 = Number(sc.ca2||0), exam = Number(sc.exam||0);
       const total = computeTotal(ca1,ca2,exam);
       const {grade,comment} = getGrade(total, r.className);
-      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[fieldKey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[fieldKey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[fieldKey(s)]?'#'+r.subjectPositions[fieldKey(s)]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
     }).join('');
 
     const traitCells = traits.map(t =>
@@ -396,7 +396,7 @@
       const ca1=Number(sc.ca1||0), ca2=Number(sc.ca2||0), exam=Number(sc.exam||0);
       const total = computeTotal(ca1,ca2,exam);
       const {grade,comment} = getGrade(total, r.className);
-      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[s]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[s]?'#'+r.subjectPositions[s]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[fieldKey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[fieldKey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[fieldKey(s)]?'#'+r.subjectPositions[fieldKey(s)]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
     }).join('');
 
     const pColor = r.passFail==='Pass' ? '#1a5c35' : '#721c24';
@@ -471,6 +471,10 @@
     }
 
     return html;
+  }
+
+  function fieldKey(str) {
+    return str.replace(/\./g, '_').replace(/\//g, '_').replace(/\s+/g, '_');
   }
 
   function logout() { sessionStorage.clear(); window.location.href='index.html'; }

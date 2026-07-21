@@ -74,6 +74,28 @@
       .modal{margin:8px}
       .modal-lg{max-width:100%}
     }
+
+    .term-pick-btn {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--radius); padding: 24px 40px; cursor: pointer;
+      transition: all 0.2s; display: flex; flex-direction: column;
+      align-items: center; gap: 8px; min-width: 140px;
+      box-shadow: var(--shadow-sm);
+    }
+    .term-pick-btn:hover {
+      border-color: var(--primary); background: var(--primary);
+      transform: translateY(-2px); box-shadow: 0 6px 20px rgba(27,61,107,0.2);
+    }
+    .term-pick-btn:hover .term-pick-num,
+    .term-pick-btn:hover .term-pick-label { color: #fff; }
+    .term-pick-num {
+      font-size: 2.5rem; font-weight: 800; color: var(--primary);
+      font-family: var(--font-display); line-height: 1;
+    }
+    .term-pick-label {
+      font-size: 0.85rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
   </style>
 </head>
 <body>
@@ -122,6 +144,7 @@
       <a href="#" onclick="switchTab('scheme')" id="nav-scheme"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span> Scheme of Work</a>
       <a href="#" onclick="switchTab('announcements')" id="nav-ann"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span> Announcements</a>
       <a href="notes.html" id="nav-notes"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span> Lesson Notes</a>
+      <a href="#" onclick="switchTab('termfix')" id="nav-termfix" style="display:none;border-left:3px solid #c8963e;"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg></span> Term Correction</a>
     </nav>
     <div class="sidebar__footer">
       <button class="btn btn-danger btn-full btn-sm" onclick="adminLogout()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-logout"/></svg> Sign Out</button>
@@ -229,6 +252,36 @@
         </div>
       </div>
 
+      <!-- ── Term Picker Screen ── -->
+      <div id="termPickerScreen">
+        <div style="text-align:center;padding:20px 0 30px;">
+          <p style="color:var(--text-muted);margin-bottom:24px;font-size:0.95rem;">Select the term you are entering results for</p>
+          <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+            <button class="term-pick-btn" onclick="selectResultTerm('Term 1')">
+              <div class="term-pick-num">1</div>
+              <div class="term-pick-label">Term 1</div>
+            </button>
+            <button class="term-pick-btn" onclick="selectResultTerm('Term 2')">
+              <div class="term-pick-num">2</div>
+              <div class="term-pick-label">Term 2</div>
+            </button>
+            <button class="term-pick-btn" onclick="selectResultTerm('Term 3')">
+              <div class="term-pick-num">3</div>
+              <div class="term-pick-label">Term 3</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Results Main Content (shown after term is picked) ── -->
+      <div id="resultsMainContent" style="display:none;">
+
+        <!-- Selected term banner -->
+        <div id="selectedTermBanner" style="display:flex;align-items:center;justify-content:space-between;background:var(--primary);color:#fff;border-radius:var(--radius);padding:10px 18px;margin-bottom:18px;">
+          <span style="font-weight:700;font-size:1rem;" id="selectedTermLabel"></span>
+          <button onclick="resetTermPicker()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 14px;border-radius:20px;cursor:pointer;font-size:0.82rem;">↩ Change Term</button>
+        </div>
+
       <!-- Mode tabs -->
       <div class="result-mode-nav" style="margin-bottom:18px;">
         <button class="tab-btn active" id="rmode-student" onclick="switchResultMode('student')">
@@ -325,6 +378,79 @@
         <div id="bulkGridEmpty" style="display:none;padding:32px;text-align:center;color:var(--text-muted);">
           Select a class, subject and session above to load students.
         </div>
+      </div>
+
+      </div> <!-- end resultsMainContent -->
+    </div>
+
+    <!-- ══ TERM CORRECTION ══ -->
+    <div class="tab-panel" id="tab-termfix">
+      <div class="page-title">
+        <h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg> Term Correction</h1>
+        <p>Move results that were saved under the wrong term to the correct one</p>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;border-left:4px solid var(--accent);">
+        <div class="card-body">
+          <div style="background:#fff8ec;border:1px solid #f0c070;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:.88rem;color:#7a5000;">
+            <strong>⚠ Important:</strong> This tool moves ALL results for a class from one term to another.
+            Results in the wrong term will be deleted after being copied to the correct term.
+            Positions and averages will be recomputed automatically. This cannot be undone.
+          </div>
+
+          <div class="two-col">
+            <div class="form-group">
+              <label class="form-label">Class</label>
+              <select class="form-control" id="tfClass">
+                <option value="">— Select Class —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Session</label>
+              <input type="text" class="form-control" id="tfSession" placeholder="e.g. 2025/2026"/>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="form-group">
+              <label class="form-label">Wrong Term (move FROM)</label>
+              <select class="form-control" id="tfFrom">
+                <option value="">— Select —</option>
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Correct Term (move TO)</label>
+              <select class="form-control" id="tfTo">
+                <option value="">— Select —</option>
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn btn-accent" onclick="previewTermFix()" style="margin-top:8px;">
+            <svg class="icon-svg" aria-hidden="true"><use href="#ic-search"/></svg> Preview Affected Results
+          </button>
+        </div>
+      </div>
+
+      <!-- Preview results -->
+      <div id="tfPreviewCard" style="display:none;" class="card" style="margin-bottom:18px;">
+        <div class="card-header">
+          <h3 id="tfPreviewTitle">Results to be moved</h3>
+        </div>
+        <div class="card-body" id="tfPreviewBody"></div>
+        <div class="card-body" style="padding-top:0;">
+          <button class="btn btn-danger" onclick="executeTermFix()" id="tfExecuteBtn">
+            <svg class="icon-svg" aria-hidden="true"><use href="#ic-check"/></svg> Confirm &amp; Move Results
+          </button>
+          <button class="btn btn-outline" onclick="cancelTermFix()" style="margin-left:10px;">Cancel</button>
+        </div>
+      </div>
+
+      <div id="tfEmptyState" style="display:none;padding:40px;text-align:center;color:var(--text-muted);">
+        <div style="font-size:2.5rem;margin-bottom:12px;">✓</div>
+        <h3>No results found</h3>
+        <p>No results exist for that class, session and term combination.</p>
       </div>
     </div>
 
@@ -632,6 +758,12 @@ function applyRoleBadge() {
     ? `<span style="font-size:.7rem;font-weight:700;background:#c8963e;color:#fff;padding:3px 10px;border-radius:12px;margin-left:10px;vertical-align:middle;">HEAD TEACHER</span>`
     : `<span style="font-size:.7rem;font-weight:700;background:rgba(255,255,255,0.25);color:#fff;padding:3px 10px;border-radius:12px;margin-left:10px;vertical-align:middle;">${currentClassName}</span>`;
   topbar.insertAdjacentHTML('beforeend', badge);
+
+  // Show Term Correction tab only for head teachers
+  if (currentRole === 'headteacher') {
+    const termFixNav = document.getElementById('nav-termfix');
+    if (termFixNav) termFixNav.style.display = 'flex';
+  }
 }
 
 // ══ TEACHER UI ADJUSTMENTS ══
@@ -686,12 +818,16 @@ function switchTab(tab) {
   const mn = document.getElementById('mnav-'+tab);
   if (mn) mn.classList.add('active');
 
+  // Always reset to term picker when switching to results tab
+  if (tab === 'results') resetTermPicker();
+
+  // Populate tfClass when switching to termfix
+  if (tab === 'termfix') populateTermFixClasses();
+
   // For teachers: auto-trigger data loads when switching tabs
   if (currentRole === 'teacher') {
-    if (tab === 'results') loadResultStudents();
     if (tab === 'subjects') loadSubjectsForClassTeacher();
     if (tab === 'scheme')   loadSchemeSubjects();
-    if (tab === 'bulk')     loadBulkSubjects();
   }
 }
 
@@ -754,19 +890,29 @@ function renderStudentList() {
     container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">No students found in this class.</div>';
     return;
   }
-  container.innerHTML = list.map(s => `
+  container.innerHTML = list.map(s => {
+    const safeName = escapeHtml(s.fullName);
+    return `
     <div class="s-row">
       <div class="s-avatar">${(s.fullName||'?')[0].toUpperCase()}</div>
       <div class="s-info">
-        <div class="name">${s.fullName} <span style="font-size:.75rem;color:var(--text-muted);">${s.gender||''}</span></div>
+        <div class="name">${safeName} <span style="font-size:.75rem;color:var(--text-muted);">${escapeHtml(s.gender||'')}</span></div>
         <div class="meta">ID: ${s.id} · Age: ${s.age} · Reg: ${s.yearRegistered} · PIN: ${s.pin}</div>
       </div>
       <div class="s-actions">
-        <button class="btn btn-outline btn-sm" onclick="openEditStudent('${s.id}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg> Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}','${s.fullName}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-trash"/></svg></button>
+        <button class="btn btn-outline btn-sm edit-student-btn" data-id="${s.id}"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg> Edit</button>
+        <button class="btn btn-danger btn-sm delete-student-btn" data-id="${s.id}" data-name="${safeName}"><svg class="icon-svg" aria-hidden="true"><use href="#ic-trash"/></svg></button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+
+  // Safe event delegation — no inline args, no quote issues
+  container.querySelectorAll('.edit-student-btn').forEach(btn => {
+    btn.addEventListener('click', () => openEditStudent(btn.dataset.id));
+  });
+  container.querySelectorAll('.delete-student-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteStudent(btn.dataset.id, btn.dataset.name));
+  });
 }
 
 function openAddStudent() {
@@ -921,6 +1067,7 @@ function openResultModal(studentId, className, studentName) {
 // ══ LOWER RESULT MODAL ══
 async function openLowerResultModal(studentId, className, studentName) {
   document.getElementById('lowerResultTitle').textContent = `${studentName} — ${className} Result`;
+  invalidateSubjectsCache(className);
   const subjects = await getSubjectsForClass(className);
 
   // Subject scores — same CA1/CA2/Exam structure as upper school
@@ -1022,7 +1169,9 @@ async function saveLowerResult() {
   const studentId = currentResultStudentId;
   const className = currentResultClassName;
   const term      = document.getElementById('resultTerm').value;
-  const session   = document.getElementById('resultSession').value;
+  const rawSession = document.getElementById('resultSession').value.trim();
+  const session   = normaliseSession(rawSession);
+  if (session) document.getElementById('resultSession').value = session;
   const subjects  = await getSubjectsForClass(className);
 
   if (!session) return showToast('Enter the session.','error');
@@ -1083,6 +1232,16 @@ async function saveLowerResult() {
   } catch(e) { showToast('Error saving result.','error'); console.error(e); }
 }
 
+// Commits an array of {ref, data} updates in safe chunks of 400
+async function commitInChunks(updates) {
+  const CHUNK = 400;
+  for (let i = 0; i < updates.length; i += CHUNK) {
+    const batch = db.batch();
+    updates.slice(i, i + CHUNK).forEach(u => batch.update(u.ref, u.data));
+    await batch.commit();
+  }
+}
+
 async function computeLowerClassStats(className, term, session, thisStudentId, thisScores, resultData) {
   const docId = `${thisStudentId}_${className}_${session}_${term}`.replace(/[\s/]/g,'_');
   await db.collection('results').doc(docId).set(resultData);
@@ -1096,18 +1255,20 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
   const classAvg = allResultDocs.length
     ? Math.round(allResultDocs.reduce((s,r)=>s+(r.average||0),0)/allResultDocs.length) : 0;
   const sorted = [...allResultDocs].sort((a,b)=>(b.average||0)-(a.average||0));
-  const batch = db.batch();
+
+  const updates = [];
   let pos = 1;
   sorted.forEach((r,i) => {
     if (i>0 && (r.average||0)<(sorted[i-1].average||0)) pos=i+1;
-    batch.update(db.collection('results').doc(r.id), { overallPosition: pos, classAverage: classAvg });
+    updates.push({ ref: db.collection('results').doc(r.id), data: { overallPosition: pos, classAverage: classAvg } });
   });
 
   // Subject stats: highest, lowest, positions
   subjects.forEach(subj => {
     const subjectTotals = allResultDocs
       .map(r => {
-        const sc = r.scores?.[subj] || {};
+        // Try exact key first, then trimmed to catch whitespace mismatches
+        const sc = r.scores?.[subj] || r.scores?.[subj.trim()] || {};
         const total = computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
         return { id: r.id, total };
       })
@@ -1120,15 +1281,16 @@ async function computeLowerClassStats(className, term, session, thisStudentId, t
     let sp = 1;
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
-      batch.update(db.collection('results').doc(x.id), {
-        [`subjectHighest.${subj}`]: highest,
-        [`subjectLowest.${subj}`]:  lowest,
-        [`subjectClassAvg.${subj}`]: subjectAvg,
-        [`subjectPositions.${subj}`]: sp
-      });
+      updates.push({ ref: db.collection('results').doc(x.id), data: {
+        [`subjectHighest.${fieldKey(subj)}`]: highest,
+        [`subjectLowest.${fieldKey(subj)}`]:  lowest,
+        [`subjectClassAvg.${fieldKey(subj)}`]: subjectAvg,
+        [`subjectPositions.${fieldKey(subj)}`]: sp
+      }});
     });
   });
-  await batch.commit();
+
+  await commitInChunks(updates);
 }
 
 const UPPER_TRAITS = [
@@ -1240,6 +1402,7 @@ function getUpperActivities() {
 // ══ UPPER RESULT MODAL ══
 async function openUpperResultModal(studentId, className, studentName) {
   document.getElementById('upperResultTitle').textContent = `${studentName} — ${className} Result`;
+  invalidateSubjectsCache(className);
   const subjects = await getSubjectsForClass(className);
 
   document.getElementById('upperScoresContainer').innerHTML = subjects.map(subj => `
@@ -1317,10 +1480,12 @@ async function saveUpperResult() {
   const studentId = currentResultStudentId;
   const className = currentResultClassName;
   const term      = document.getElementById('resultTerm').value;
-  const session   = document.getElementById('resultSession').value;
+  const rawSession = document.getElementById('resultSession').value.trim();
+  const session   = normaliseSession(rawSession);
+  if (session) document.getElementById('resultSession').value = session;
   const subjects  = await getSubjectsForClass(className);
 
-  if (!session) return showToast('Enter the session.','error');
+  if (!session) return showToast('Enter the session e.g. 2025/2026.','error');
 
   const scores = {};
   subjects.forEach(s => {
@@ -1383,18 +1548,18 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
 
   // Overall positions
   const sorted = [...allDocs].sort((a,b)=>(b.average||0)-(a.average||0));
-  const batch = db.batch();
+  const updates = [];
   let pos = 1;
   sorted.forEach((r,i) => {
     if (i>0 && (r.average||0)<(sorted[i-1].average||0)) pos=i+1;
-    batch.update(db.collection('results').doc(r.id), { overallPosition: pos, classAverage: classAvg });
+    updates.push({ ref: db.collection('results').doc(r.id), data: { overallPosition: pos, classAverage: classAvg } });
   });
 
   // Subject stats: highest, lowest, subject positions
   subjects.forEach(subj => {
     const subjectTotals = allDocs
       .map(r => {
-        const sc = r.scores?.[subj] || {};
+        const sc = r.scores?.[subj] || r.scores?.[subj.trim()] || {};
         const total = computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
         return { id: r.id, total };
       })
@@ -1406,15 +1571,15 @@ async function computeUpperClassStats(className, term, session, thisStudentId, t
     let sp = 1;
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
-      batch.update(db.collection('results').doc(x.id), {
-        [`subjectHighest.${subj}`]: highest,
-        [`subjectLowest.${subj}`]:  lowest,
-        [`subjectPositions.${subj}`]: sp
-      });
+      updates.push({ ref: db.collection('results').doc(x.id), data: {
+        [`subjectHighest.${fieldKey(subj)}`]: highest,
+        [`subjectLowest.${fieldKey(subj)}`]:  lowest,
+        [`subjectPositions.${fieldKey(subj)}`]: sp
+      }});
     });
   });
 
-  await batch.commit();
+  await commitInChunks(updates);
 }
 
 // ══ SCHEME ══
@@ -1485,10 +1650,13 @@ async function loadAnnouncementsAdmin() {
   c.innerHTML = snap.docs.map(doc => {
     const a = doc.data();
     const date = a.date?.toDate ? a.date.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    const safeTitle = escapeHtml(a.title);
+    const safeBody  = escapeHtml(a.body||'');
+    const safeTag   = escapeHtml(a.tag||'');
     return `<div class="s-row">
-      <div style="flex:1;"><div style="font-weight:600;">${a.title}${a.tag?` <span class="badge" style="background:var(--primary);color:#fff;">${a.tag}</span>`:''}</div>
+      <div style="flex:1;"><div style="font-weight:600;">${safeTitle}${safeTag?` <span class="badge" style="background:var(--primary);color:#fff;">${safeTag}</span>`:''}</div>
       <div style="font-size:.76rem;color:var(--text-muted);">${date}</div>
-      <div style="font-size:.86rem;margin-top:3px;">${a.body.substring(0,100)}${a.body.length>100?'…':''}</div></div>
+      <div style="font-size:.86rem;margin-top:3px;">${safeBody.substring(0,100)}${safeBody.length>100?'…':''}</div></div>
       <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${doc.id}')"><svg class="icon-svg" aria-hidden="true"><use href="#ic-trash"/></svg></button></div>`;
   }).join('');
 }
@@ -1501,6 +1669,30 @@ async function deleteAnnouncement(id) {
 }
 
 // ══ RESULT MODE SWITCHER ══
+function selectResultTerm(term) {
+  // Set the term in both dropdowns
+  document.getElementById('resultTerm').value = term;
+  document.getElementById('bulkTerm').value   = term;
+
+  // Show banner and main content, hide picker
+  document.getElementById('termPickerScreen').style.display    = 'none';
+  document.getElementById('resultsMainContent').style.display  = 'block';
+  document.getElementById('selectedTermLabel').textContent     = '📋  ' + term + ' — ' + document.getElementById('resultSession').value;
+
+  // Auto-load students/subjects for current mode
+  const mode = document.getElementById('rmode-bulk').classList.contains('active') ? 'bulk' : 'student';
+  if (mode === 'student') loadResultStudents();
+  else loadBulkSubjects();
+}
+
+function resetTermPicker() {
+  document.getElementById('termPickerScreen').style.display   = 'block';
+  document.getElementById('resultsMainContent').style.display = 'none';
+  // Clear student list so stale data isn't shown when they return
+  document.getElementById('resultStudentList').innerHTML =
+    '<div style="padding:30px;text-align:center;color:var(--text-muted);">Select a class above.</div>';
+}
+
 function switchResultMode(mode) {
   document.getElementById('result-mode-student').style.display = mode==='student' ? 'block' : 'none';
   document.getElementById('result-mode-bulk').style.display    = mode==='bulk'    ? 'block' : 'none';
@@ -1619,7 +1811,9 @@ async function saveBulkResults() {
   const cls     = document.getElementById('bulkClass').value;
   const subject = document.getElementById('bulkSubject').value;
   const term    = document.getElementById('bulkTerm').value;
-  const session = document.getElementById('bulkSession').value;
+  const rawSession = document.getElementById('bulkSession').value.trim();
+  const session = normaliseSession(rawSession);
+  if (session) document.getElementById('bulkSession').value = session;
 
   if (!cls||!subject||!session) return showToast('Fill in class, subject and session.','error');
 
@@ -1683,7 +1877,7 @@ async function recomputeClassStats(cls, term, session) {
   const subjects = await getSubjectsForClass(cls);
 
   // Recompute each student's overall average from all their scores
-  const batch1 = db.batch();
+  const upd1 = [];
   allDocs.forEach(r => {
     const enteredSubjects = Object.keys(r.scores||{});
     if (!enteredSubjects.length) return;
@@ -1693,9 +1887,9 @@ async function recomputeClassStats(cls, term, session) {
     });
     const average = Math.round(totals.reduce((a,b)=>a+b,0)/totals.length);
     const passFail = average >= 40 ? 'Pass' : 'Fail';
-    batch1.update(db.collection('results').doc(r.id), { average, passFail });
+    upd1.push({ ref: db.collection('results').doc(r.id), data: { average, passFail } });
   });
-  await batch1.commit();
+  await commitInChunks(upd1);
 
   // Re-fetch with updated averages
   const snap2   = await db.collection('results')
@@ -1706,17 +1900,17 @@ async function recomputeClassStats(cls, term, session) {
     ? Math.round(allDocs2.reduce((s,r)=>s+(r.average||0),0)/allDocs2.length) : 0;
   const sorted = [...allDocs2].sort((a,b)=>(b.average||0)-(a.average||0));
 
-  const batch2 = db.batch();
+  const upd2 = [];
   let pos = 1;
   sorted.forEach((r,i) => {
     if (i>0 && (r.average||0)<(sorted[i-1].average||0)) pos=i+1;
-    batch2.update(db.collection('results').doc(r.id), { overallPosition: pos, classAverage: classAvg });
+    upd2.push({ ref: db.collection('results').doc(r.id), data: { overallPosition: pos, classAverage: classAvg } });
   });
 
   subjects.forEach(subj => {
     const subjectTotals = allDocs2
       .map(r => {
-        const sc = r.scores?.[subj] || {};
+        const sc = r.scores?.[subj] || r.scores?.[subj.trim()] || {};
         const total = computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
         return { id: r.id, total };
       })
@@ -1729,15 +1923,166 @@ async function recomputeClassStats(cls, term, session) {
     let sp = 1;
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
-      batch2.update(db.collection('results').doc(x.id), {
-        [`subjectHighest.${subj}`]: highest,
-        [`subjectLowest.${subj}`]:  lowest,
-        [`subjectClassAvg.${subj}`]: subjectAvg,
-        [`subjectPositions.${subj}`]: sp
-      });
+      upd2.push({ ref: db.collection('results').doc(x.id), data: {
+        [`subjectHighest.${fieldKey(subj)}`]: highest,
+        [`subjectLowest.${fieldKey(subj)}`]:  lowest,
+        [`subjectClassAvg.${fieldKey(subj)}`]: subjectAvg,
+        [`subjectPositions.${fieldKey(subj)}`]: sp
+      }});
     });
   });
-  await batch2.commit();
+  await commitInChunks(upd2);
+}
+
+// ══ TERM CORRECTION ══
+let _tfResults = []; // results found in the wrong term
+
+function populateTermFixClasses() {
+  const sel = document.getElementById('tfClass');
+  if (sel.options.length > 1) return; // already populated
+  CLASSES.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c; sel.appendChild(o);
+  });
+  // Pre-fill session
+  const sess = document.getElementById('tfSession');
+  if (!sess.value) sess.value = getCurrentSession();
+}
+
+async function previewTermFix() {
+  const cls     = document.getElementById('tfClass').value;
+  const session = normaliseSession(document.getElementById('tfSession').value.trim());
+  const from    = document.getElementById('tfFrom').value;
+  const to      = document.getElementById('tfTo').value;
+
+  if (!cls)     return showToast('Select a class.', 'error');
+  if (!session) return showToast('Enter the session e.g. 2025/2026.', 'error');
+  if (!from)    return showToast('Select the wrong term (move FROM).', 'error');
+  if (!to)      return showToast('Select the correct term (move TO).', 'error');
+  if (from === to) return showToast('FROM and TO terms must be different.', 'error');
+
+  document.getElementById('tfSession').value = session;
+  document.getElementById('tfPreviewCard').style.display = 'none';
+  document.getElementById('tfEmptyState').style.display  = 'none';
+
+  try {
+    const snap = await db.collection('results')
+      .where('className', '==', cls)
+      .where('session',   '==', session)
+      .where('term',      '==', from)
+      .get();
+
+    _tfResults = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (!_tfResults.length) {
+      document.getElementById('tfEmptyState').style.display = 'block';
+      return;
+    }
+
+    // Build preview table
+    const rows = _tfResults.map((r, i) => {
+      const avg  = r.average || '—';
+      const name = escapeHtml(allStudents.find(s=>s.id===r.studentId)?.fullName || r.studentId);
+      return `<tr>
+        <td style="padding:8px 12px;text-align:center;">
+          <input type="checkbox" class="tf-chk" data-index="${i}" checked style="width:16px;height:16px;cursor:pointer;"/>
+        </td>
+        <td style="padding:8px 12px;">${r.studentId}</td>
+        <td style="padding:8px 12px;">${name}</td>
+        <td style="padding:8px 12px;">${avg}%</td>
+        <td style="padding:8px 12px;color:var(--accent);font-weight:600;">${from} → ${to}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('tfPreviewTitle').textContent =
+      `${_tfResults.length} result(s) found in ${from} — tick the students to move`;
+    document.getElementById('tfPreviewBody').innerHTML = `
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:var(--primary);color:#fff;">
+            <th style="padding:8px 12px;text-align:center;">
+              <input type="checkbox" id="tfSelectAll" checked title="Select all"
+                onchange="document.querySelectorAll('.tf-chk').forEach(c=>c.checked=this.checked)"
+                style="width:16px;height:16px;cursor:pointer;"/>
+            </th>
+            <th style="padding:8px 12px;text-align:left;">Student ID</th>
+            <th style="padding:8px 12px;text-align:left;">Name</th>
+            <th style="padding:8px 12px;text-align:left;">Average</th>
+            <th style="padding:8px 12px;text-align:left;">Action</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p style="font-size:.82rem;color:var(--text-muted);margin-top:10px;">
+        All students are ticked by default. Untick any student whose result is already correct and should stay in ${from}.
+      </p>`;
+    document.getElementById('tfPreviewCard').style.display = 'block';
+  } catch(e) {
+    showToast('Error fetching results.', 'error');
+    console.error(e);
+  }
+}
+
+async function executeTermFix() {
+  const cls     = document.getElementById('tfClass').value;
+  const session = document.getElementById('tfSession').value;
+  const from    = document.getElementById('tfFrom').value;
+  const to      = document.getElementById('tfTo').value;
+
+  if (!_tfResults.length) return;
+
+  // Only move ticked students
+  const checked = [...document.querySelectorAll('.tf-chk')]
+    .filter(c => c.checked)
+    .map(c => parseInt(c.dataset.index));
+
+  if (!checked.length) return showToast('No students selected.', 'error');
+
+  const toMove = checked.map(i => _tfResults[i]);
+
+  const btn = document.getElementById('tfExecuteBtn');
+  btn.disabled = true;
+  btn.textContent = 'Moving...';
+
+  try {
+    // Step 1: Copy each selected result to the new term, delete the old one
+    for (const r of toMove) {
+      const newDocId = `${r.studentId}_${cls}_${session}_${to}`.replace(/[\s/]/g, '_');
+      const newData  = { ...r, term: to };
+      delete newData.id;
+      // Remove old stats — they'll be recomputed
+      delete newData.overallPosition;
+      delete newData.classAverage;
+      delete newData.subjectHighest;
+      delete newData.subjectLowest;
+      delete newData.subjectPositions;
+      delete newData.subjectClassAvg;
+
+      await db.collection('results').doc(newDocId).set(newData);
+      await db.collection('results').doc(r.id).delete();
+    }
+
+    // Step 2: Recompute stats for the destination term
+    await recomputeClassStats(cls, to, session);
+
+    showToast(`${toMove.length} result(s) moved from ${from} to ${to} and recomputed.`);
+    _tfResults = [];
+    document.getElementById('tfPreviewCard').style.display = 'none';
+    document.getElementById('tfEmptyState').style.display  = 'block';
+    document.getElementById('tfEmptyState').querySelector('p').textContent =
+      'Results successfully moved. Students can now view them under ' + to + '.';
+  } catch(e) {
+    showToast('Error during move. Some results may be partially moved — check Firestore.', 'error');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="icon-svg" aria-hidden="true"><use href="#ic-check"/></svg> Confirm & Move Results';
+  }
+}
+
+function cancelTermFix() {
+  _tfResults = [];
+  document.getElementById('tfPreviewCard').style.display = 'none';
 }
 
 // ══ RESULTS VISIBILITY ══
@@ -1756,7 +2101,7 @@ function renderVisibilityToggles() {
   if (!container) return;
   const classesToShow = (currentRole === 'teacher') ? [currentClassName] : CLASSES;
   container.innerHTML = classesToShow.map(cls => {
-    const isOn = _visibility[cls] !== false; // default ON if not set
+    const isOn = _visibility[cls] === true; // default OFF until explicitly enabled
     return `
       <div class="vis-toggle-row">
         <div>
@@ -1880,7 +2225,36 @@ async function removeSubject(name) {
 }
 
 // ══ HELPERS ══
-function sanitize(str) { return str.replace(/[\s&\/]/g,'_').toLowerCase(); }
+function sanitize(str) {
+  // Strip every character that is invalid in HTML IDs or Firestore field keys
+  return str.replace(/[\s&\/()#.*`'",!?<>:;@+=\[\]{}|^~%$]/g,'_').toLowerCase();
+}
+
+// Converts subject name to a safe Firestore field key
+// Replaces dots and other path-breaking chars with underscores
+function fieldKey(str) {
+  return str.replace(/\./g, '_').replace(/\//g, '_').replace(/\s+/g, '_');
+}
+
+function normaliseSession(s) {
+  if (!s) return '';
+  // Accept: 2025/2026, 2025-2026, 2025 2026, 2025/26
+  const m = s.match(/(\d{4})[\s\-\/](\d{2,4})/);
+  if (!m) return s; // return as-is if it doesn't match expected pattern
+  const y1 = m[1];
+  const y2 = m[2].length === 2 ? y1.slice(0,2) + m[2] : m[2];
+  return `${y1}/${y2}`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
 function openModal(id)  { document.getElementById(id).style.display='flex'; }
 function closeModal(id) { document.getElementById(id).style.display='none'; }
 document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.style.display='none'; }));
