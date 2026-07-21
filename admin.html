@@ -1117,11 +1117,31 @@ async function saveStudent() {
 }
 
 async function deleteStudent(id, name) {
-  if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
-  await db.collection('students').doc(id).delete();
-  showToast(`${name} deleted.`);
-  await loadAllStudents();
-  if (_activeClass) openClassStudents(_activeClass);
+  if (!confirm(`Delete ${name}? This cannot be undone. Their results will also be permanently deleted.`)) return;
+  try {
+    // Delete student record
+    await db.collection('students').doc(id).delete();
+
+    // Delete all result documents belonging to this student
+    const snap = await db.collection('results').where('studentId', '==', id).get();
+    if (!snap.empty) {
+      const deletes = snap.docs.map(d => ({ ref: db.collection('results').doc(d.id), data: {} }));
+      // Use batch deletes in chunks
+      const CHUNK = 400;
+      for (let i = 0; i < deletes.length; i += CHUNK) {
+        const batch = db.batch();
+        deletes.slice(i, i + CHUNK).forEach(u => batch.delete(u.ref));
+        await batch.commit();
+      }
+    }
+
+    showToast(`${name} and their results deleted.`);
+    await loadAllStudents();
+    if (_activeClass) openClassStudents(_activeClass);
+  } catch(e) {
+    showToast('Error deleting student.', 'error');
+    console.error(e);
+  }
 }
 
 // ══ RESULTS — Student List ══
@@ -2146,20 +2166,22 @@ function renderReviewTable() {
     document.getElementById('reviewTableTitle').textContent = 'Overall Class Rankings';
     document.getElementById('reviewCount').textContent = `${sorted.length} student${sorted.length!==1?'s':''}`;
 
-    rows = sorted.map(r => {
-      const name   = escapeHtml(allStudents.find(s=>s.id===r.studentId)?.fullName || r.studentId);
-      const pos    = r.overallPosition ? `#${r.overallPosition}` : '—';
-      const avg    = r.average !== undefined ? `${r.average}%` : '—';
-      const status = r.passFail || '—';
-      const sColor = status === 'Pass' ? 'var(--success,#1a6b3c)' : 'var(--danger,#c0392b)';
-      const posColor = r.overallPosition === 1 ? '#c8963e' : 'var(--primary)';
-      return `<tr style="border-bottom:1px solid var(--border);">
-        <td style="padding:10px 14px;text-align:center;font-weight:800;font-size:1.1rem;color:${posColor};">${pos}</td>
-        <td style="padding:10px 14px;font-weight:600;">${name}</td>
-        <td style="padding:10px 14px;text-align:center;font-weight:700;">${avg}</td>
-        <td style="padding:10px 14px;text-align:center;font-weight:700;color:${sColor};">${status}</td>
-      </tr>`;
-    }).join('');
+    rows = sorted
+      .filter(r => allStudents.find(s => s.id === r.studentId)) // skip deleted students
+      .map(r => {
+        const name   = escapeHtml(allStudents.find(s=>s.id===r.studentId)?.fullName || r.studentId);
+        const pos    = r.overallPosition ? `#${r.overallPosition}` : '—';
+        const avg    = r.average !== undefined ? `${r.average}%` : '—';
+        const status = r.passFail || '—';
+        const sColor = status === 'Pass' ? 'var(--success,#1a6b3c)' : 'var(--danger,#c0392b)';
+        const posColor = r.overallPosition === 1 ? '#c8963e' : 'var(--primary)';
+        return `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px 14px;text-align:center;font-weight:800;font-size:1.1rem;color:${posColor};">${pos}</td>
+          <td style="padding:10px 14px;font-weight:600;">${name}</td>
+          <td style="padding:10px 14px;text-align:center;font-weight:700;">${avg}</td>
+          <td style="padding:10px 14px;text-align:center;font-weight:700;color:${sColor};">${status}</td>
+        </tr>`;
+      }).join('');
 
   } else {
     // Subject view — sort by subject position
@@ -2174,6 +2196,7 @@ function renderReviewTable() {
 
     // Build rows sorted by subject position
     const withScores = _reviewResults
+      .filter(r => allStudents.find(s => s.id === r.studentId)) // skip deleted students
       .map(r => {
         const sc    = r.scores?.[subjSel] || r.scores?.[subjSel.trim()] || {};
         const total = computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
