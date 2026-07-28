@@ -375,8 +375,9 @@
                 <thead>
                   <tr>
                     <th style="padding:10px 14px;text-align:left;background:var(--primary);color:#fff;font-size:.82rem;">Student</th>
-                    <th style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">CA 1 <span style="opacity:.75;font-weight:400;">/20</span></th>
-                    <th style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">CA 2 <span style="opacity:.75;font-weight:400;">/20</span></th>
+                    <th class="bulk-ca-col" style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">CA 1 <span style="opacity:.75;font-weight:400;">/20</span></th>
+                    <th class="bulk-ca-col" style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">CA 2 <span style="opacity:.75;font-weight:400;">/20</span></th>
+                    <!-- exam header updated dynamically -->
                     <th style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">Exam <span style="opacity:.75;font-weight:400;">/60</span></th>
                     <th style="padding:10px 14px;text-align:center;background:var(--primary);color:#fff;font-size:.82rem;">Total</th>
                   </tr>
@@ -465,6 +466,7 @@
                 <th style="padding:10px 14px;text-align:left;">Student Name</th>
                 <th style="padding:10px 14px;text-align:center;" id="rv_scoreHeader">Average</th>
                 <th style="padding:10px 14px;text-align:center;">Status</th>
+                <th style="padding:10px 14px;text-align:center;">Print</th>
               </tr>
             </thead>
             <tbody id="reviewTableBody"></tbody>
@@ -690,7 +692,7 @@
       </div>
 
       <!-- Subject Scores -->
-      <div class="sec-title"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subject Scores (CA1/20 + CA2/20 + Exam/60)</div>
+      <div class="sec-title" id="lowerScoreTitle"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subject Scores</div>
       <div id="lowerScoresGrid"></div>
 
       <!-- Traits -->
@@ -1189,13 +1191,18 @@ async function openLowerResultModal(studentId, className, studentName) {
   const subjects = await getSubjectsForClass(className);
 
   // Subject scores — same CA1/CA2/Exam structure as upper school
+  const _examOnly = isNurseryExamOnly(className);
+  document.getElementById('lowerScoreTitle').innerHTML =
+    `<svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subject Scores ${_examOnly ? '(Exam/100)' : '(CA1/20 + CA2/20 + Exam/60)'}`;
+
   document.getElementById('lowerScoresGrid').innerHTML = subjects.map(subj => `
     <div class="subject-score-section">
       <h4>${subj}</h4>
-      <div class="three-col">
+      <div class="${_examOnly ? 'one-col' : 'three-col'}">
+        ${_examOnly ? '' : `
         <div class="score-card"><label>CA 1 (max 20)</label><input type="number" min="0" max="20" id="ls_ca1_${sanitize(subj)}" placeholder="0–20"/></div>
-        <div class="score-card"><label>CA 2 (max 20)</label><input type="number" min="0" max="20" id="ls_ca2_${sanitize(subj)}" placeholder="0–20"/></div>
-        <div class="score-card"><label>Exam (max 60)</label><input type="number" min="0" max="60" id="ls_exam_${sanitize(subj)}" placeholder="0–60"/></div>
+        <div class="score-card"><label>CA 2 (max 20)</label><input type="number" min="0" max="20" id="ls_ca2_${sanitize(subj)}" placeholder="0–20"/></div>`}
+        <div class="score-card"><label>Exam (max ${_examOnly ? '100' : '60'})</label><input type="number" min="0" max="${_examOnly ? '100' : '60'}" id="ls_exam_${sanitize(subj)}" placeholder="0–${_examOnly ? '100' : '60'}"/></div>
       </div>
     </div>
   `).join('');
@@ -1304,7 +1311,8 @@ async function saveLowerResult() {
     const ca1  = Number(ca1El?.value||0);
     const ca2  = Number(ca2El?.value||0);
     const exam = Number(examEl?.value||0);
-    scores[s]  = { ca1, ca2, exam, total: computeTotal(ca1, ca2, exam) };
+    const total = isNurseryExamOnly(className) ? Math.min(100, exam) : computeTotal(ca1, ca2, exam);
+    scores[s]  = { ca1, ca2, exam, total };
   });
 
   const enteredSubjects = Object.keys(scores);
@@ -1893,6 +1901,18 @@ async function loadBulkGrid() {
     });
   } catch(e) { console.warn('Could not pre-fetch results:', e); }
 
+  // Exam-only detection for this class
+  const _bulkExamOnly = isNurseryExamOnly(cls);
+
+  // Show/hide CA columns in header and update exam header label
+  document.querySelectorAll('.bulk-ca-col').forEach(el => {
+    el.style.display = _bulkExamOnly ? 'none' : '';
+  });
+  const examTh = document.querySelector('#bulkGrid thead tr th:nth-child(4)');
+  if (examTh) examTh.innerHTML = _bulkExamOnly
+    ? `Exam <span style="opacity:.75;font-weight:400;">/100</span>`
+    : `Exam <span style="opacity:.75;font-weight:400;">/60</span>`;
+
   // Build table rows
   const tbody = document.getElementById('bulkGridBody');
   tbody.innerHTML = students.map((s, idx) => {
@@ -1900,25 +1920,28 @@ async function loadBulkGrid() {
     const ca1  = existing.ca1  ?? '';
     const ca2  = existing.ca2  ?? '';
     const exam = existing.exam ?? '';
-    const total = (ca1!==''||ca2!==''||exam!=='') ? computeTotal(Number(ca1||0),Number(ca2||0),Number(exam||0)) : '—';
+    const total = exam !== ''
+      ? (_bulkExamOnly ? Math.min(100, Number(exam)) : computeTotal(Number(ca1||0),Number(ca2||0),Number(exam||0)))
+      : '—';
     const rowBg = idx % 2 === 0 ? '' : 'style="background:var(--bg);"';
+    const caDisplay = _bulkExamOnly ? 'display:none;' : '';
     return `
       <tr ${rowBg} id="bulk-row-${s.id}">
         <td style="padding:10px 14px;font-weight:500;font-size:.88rem;">
           ${s.fullName}
           <div style="font-size:.74rem;color:var(--text-muted);">${s.id}</div>
         </td>
-        <td style="padding:6px 8px;text-align:center;">
+        <td class="bulk-ca-col" style="padding:6px 8px;text-align:center;${caDisplay}">
           <input type="number" min="0" max="20" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
             id="bulk_ca1_${s.id}" value="${ca1}" placeholder="0–20" oninput="updateBulkTotal('${s.id}')"/>
         </td>
-        <td style="padding:6px 8px;text-align:center;">
+        <td class="bulk-ca-col" style="padding:6px 8px;text-align:center;${caDisplay}">
           <input type="number" min="0" max="20" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
             id="bulk_ca2_${s.id}" value="${ca2}" placeholder="0–20" oninput="updateBulkTotal('${s.id}')"/>
         </td>
         <td style="padding:6px 8px;text-align:center;">
-          <input type="number" min="0" max="60" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
-            id="bulk_exam_${s.id}" value="${exam}" placeholder="0–60" oninput="updateBulkTotal('${s.id}')"/>
+          <input type="number" min="0" max="${_bulkExamOnly?'100':'60'}" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
+            id="bulk_exam_${s.id}" value="${exam}" placeholder="0–${_bulkExamOnly?'100':'60'}" oninput="updateBulkTotal('${s.id}')"/>
         </td>
         <td style="padding:10px 14px;text-align:center;font-weight:700;color:var(--primary);" id="bulk_total_${s.id}">${total}</td>
       </tr>`;
@@ -1929,11 +1952,13 @@ async function loadBulkGrid() {
 }
 
 function updateBulkTotal(studentId) {
-  const ca1  = Number(document.getElementById(`bulk_ca1_${studentId}`)?.value||0);
-  const ca2  = Number(document.getElementById(`bulk_ca2_${studentId}`)?.value||0);
-  const exam = Number(document.getElementById(`bulk_exam_${studentId}`)?.value||0);
+  const ca1    = Number(document.getElementById(`bulk_ca1_${studentId}`)?.value||0);
+  const ca2    = Number(document.getElementById(`bulk_ca2_${studentId}`)?.value||0);
+  const exam   = Number(document.getElementById(`bulk_exam_${studentId}`)?.value||0);
+  const cls    = (currentRole === 'teacher') ? currentClassName : document.getElementById('bulkClass').value;
+  const total  = isNurseryExamOnly(cls) ? Math.min(100, exam) : computeTotal(ca1, ca2, exam);
   const totalEl = document.getElementById(`bulk_total_${studentId}`);
-  if (totalEl) totalEl.textContent = computeTotal(ca1, ca2, exam);
+  if (totalEl) totalEl.textContent = total;
 }
 
 async function saveBulkResults() {
@@ -2175,11 +2200,19 @@ function renderReviewTable() {
         const status = r.passFail || '—';
         const sColor = status === 'Pass' ? 'var(--success,#1a6b3c)' : 'var(--danger,#c0392b)';
         const posColor = r.overallPosition === 1 ? '#c8963e' : 'var(--primary)';
+        const session  = document.getElementById('reviewSession').value;
+        const term     = document.getElementById('reviewTerm').value;
+        const printUrl = `results.html?studentId=${r.studentId}&session=${encodeURIComponent(session)}&term=${encodeURIComponent(term)}&adminMode=true`;
         return `<tr style="border-bottom:1px solid var(--border);">
           <td style="padding:10px 14px;text-align:center;font-weight:800;font-size:1.1rem;color:${posColor};">${pos}</td>
           <td style="padding:10px 14px;font-weight:600;">${name}</td>
           <td style="padding:10px 14px;text-align:center;font-weight:700;">${avg}</td>
           <td style="padding:10px 14px;text-align:center;font-weight:700;color:${sColor};">${status}</td>
+          <td style="padding:10px 14px;text-align:center;">
+            <a href="${printUrl}" target="_blank" class="btn btn-outline btn-sm" style="font-size:.75rem;padding:4px 10px;">
+              <svg class="icon-svg" aria-hidden="true"><use href="#ic-print"/></svg> Print
+            </a>
+          </td>
         </tr>`;
       }).join('');
 
@@ -2212,10 +2245,13 @@ function renderReviewTable() {
     document.getElementById('reviewSummary').style.display  = 'none';
 
     rows = withScores.map(({r, total, sPos}) => {
-      const name   = escapeHtml(allStudents.find(s=>s.id===r.studentId)?.fullName || r.studentId);
-      const pos    = sPos ? `#${sPos}` : '—';
+      const name     = escapeHtml(allStudents.find(s=>s.id===r.studentId)?.fullName || r.studentId);
+      const pos      = sPos ? `#${sPos}` : '—';
       const {grade, comment} = getGrade(total, cls);
       const posColor = sPos === 1 ? '#c8963e' : 'var(--primary)';
+      const session  = document.getElementById('reviewSession').value;
+      const term     = document.getElementById('reviewTerm').value;
+      const printUrl = `results.html?studentId=${r.studentId}&session=${encodeURIComponent(session)}&term=${encodeURIComponent(term)}&adminMode=true`;
       return `<tr style="border-bottom:1px solid var(--border);">
         <td style="padding:10px 14px;text-align:center;font-weight:800;font-size:1.1rem;color:${posColor};">${pos}</td>
         <td style="padding:10px 14px;font-weight:600;">${name}</td>
@@ -2224,6 +2260,11 @@ function renderReviewTable() {
         </td>
         <td style="padding:10px 14px;text-align:center;color:var(--text-muted);font-size:.82rem;">
           CA1: ${r.scores?.[subjSel]?.ca1||0} · CA2: ${r.scores?.[subjSel]?.ca2||0} · Exam: ${r.scores?.[subjSel]?.exam||0}
+        </td>
+        <td style="padding:10px 14px;text-align:center;">
+          <a href="${printUrl}" target="_blank" class="btn btn-outline btn-sm" style="font-size:.75rem;padding:4px 10px;">
+            <svg class="icon-svg" aria-hidden="true"><use href="#ic-print"/></svg> Print
+          </a>
         </td>
       </tr>`;
     }).join('');

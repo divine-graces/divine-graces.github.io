@@ -63,6 +63,14 @@ function invalidateSubjectsCache(className) {
   delete _subjectsCache[className];
 }
 
+function isNurseryExamOnly(className) {
+  if (!className) return false;
+  return className === 'Pre Nursery' ||
+         className === 'Nursery 1'   ||
+         className === 'Nursery 2'   ||
+         className === 'Nursery 3';
+}
+
 function isNurseryOrLowerPrimary(className) {
   if (!className) return false;
   if (className === 'Pre Nursery') return true;
