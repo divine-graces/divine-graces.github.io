@@ -239,20 +239,37 @@
       populateClasses();
       document.getElementById('historySelector').style.display = 'flex';
 
-      // Admin print mode: auto-select the session and term passed via URL, then auto-print
+      // Admin print mode: auto-select session, class, term in correct order then print
       if (_adminMode && _adminSessP && _adminTermP) {
+        // Step 1: set session
         const selSess2 = document.getElementById('selSession');
-        const selTerm2 = document.getElementById('selTerm');
         if (selSess2) selSess2.value = _adminSessP;
-        populateClasses();
+
+        // Step 2: populate classes for this session, then set the student's class
+        populateClasses(); // fills selClass based on session
+        const selCls2 = document.getElementById('selClass');
+        if (selCls2 && studentData?.currentClass) {
+          // Try to find the class in the dropdown — it may be listed differently
+          const opts = [...selCls2.options].map(o => o.value);
+          const match = opts.find(o => o === studentData.currentClass) || opts[0];
+          selCls2.value = match;
+        }
+
+        // Step 3: set term
+        const selTerm2 = document.getElementById('selTerm');
         if (selTerm2) selTerm2.value = _adminTermP;
-        await loadResult();
-        // Hide nav elements that aren't needed for print
-        document.querySelectorAll('.sidebar, .mobile-nav, .historySelector, #historySelector').forEach(el => {
+
+        // Step 4: render the result now that all dropdowns are correct
+        renderResult();
+
+        // Step 5: hide nav elements not needed for print
+        document.querySelectorAll('.sidebar, .mobile-nav, #historySelector').forEach(el => {
           if (el) el.style.display = 'none';
         });
-        // Auto-trigger print after result loads
-        setTimeout(() => window.print(), 800);
+
+        // Step 6: auto-print after a short delay to let render complete
+        setTimeout(() => window.print(), 1000);
+        return; // skip the renderResult() below
       }
       renderResult();
       document.getElementById('loadingOverlay').style.display = 'none';
