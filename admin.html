@@ -1865,7 +1865,9 @@ async function loadBulkGrid() {
   const cls     = document.getElementById('bulkClass').value;
   const subject = document.getElementById('bulkSubject').value;
   const term    = document.getElementById('bulkTerm').value;
-  const session = document.getElementById('bulkSession').value;
+  const session = normaliseSession(document.getElementById('bulkSession').value.trim())
+               || document.getElementById('bulkSession').value.trim();
+  if (session) document.getElementById('bulkSession').value = session;
 
   const card  = document.getElementById('bulkGridCard');
   const empty = document.getElementById('bulkGridEmpty');
@@ -1899,6 +1901,12 @@ async function loadBulkGrid() {
       const data = d.data();
       existingResults[data.studentId] = data;
     });
+    console.log(`[BulkGrid] Fetched ${snap.docs.length} existing results for ${cls} ${term} ${session}`);
+    if (snap.docs.length > 0) {
+      const sample = snap.docs[0].data();
+      console.log('[BulkGrid] Sample scores keys:', Object.keys(sample.scores || {}));
+      console.log('[BulkGrid] Looking for subject key:', subject);
+    }
   } catch(e) { console.warn('Could not pre-fetch results:', e); }
 
   // Exam-only detection for this class
@@ -1985,19 +1993,26 @@ async function saveBulkResults() {
 
     // Step 2: write updated scores for each student
     const batch = db.batch();
+    let skippedCount = 0;
+    let writtenCount  = 0;
     students.forEach(s => {
       const ca1El  = document.getElementById(`bulk_ca1_${s.id}`);
       const ca2El  = document.getElementById(`bulk_ca2_${s.id}`);
       const examEl = document.getElementById(`bulk_exam_${s.id}`);
-      if (!ca1El) return;
 
-      const hasAny = (ca1El.value||'')!=='' || (ca2El.value||'')!=='' || (examEl.value||'')!=='';
+      // If exam input doesn't exist, grid isn't rendered — abort entirely
+      if (!examEl) { skippedCount++; return; }
+
+      // Use ca1El if it exists (not exam-only), otherwise default to 0
+      const hasAny = (ca1El?.value||'')!=='' || (ca2El?.value||'')!=='' || (examEl.value||'')!=='';
       if (!hasAny) return; // skip students with no scores entered
 
-      const ca1  = Number(ca1El.value||0);
-      const ca2  = Number(ca2El.value||0);
+      const ca1  = Number(ca1El?.value||0);
+      const ca2  = Number(ca2El?.value||0);
       const exam = Number(examEl.value||0);
-      const total = computeTotal(ca1, ca2, exam);
+      const _bulkEO = isNurseryExamOnly(cls);
+      const total = _bulkEO ? Math.min(100, exam) : computeTotal(ca1, ca2, exam);
+      writtenCount++;
 
       const docId = `${s.id}_${cls}_${session}_${term}`.replace(/[\s/]/g,'_');
       const ref   = db.collection('results').doc(docId);
@@ -2009,12 +2024,22 @@ async function saveBulkResults() {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
     });
+    if (writtenCount === 0) {
+      showLoading('loadingOverlay', false);
+      if (skippedCount > 0) {
+        showToast('Grid not loaded — select the subject first before saving.', 'error');
+      } else {
+        showToast('No scores entered — nothing to save.', 'error');
+      }
+      return;
+    }
+
     await batch.commit();
 
     // Step 3: recalculate class stats for this subject
     await recomputeClassStats(cls, term, session);
 
-    showToast(`Scores saved and computed for ${subject}!`);
+    showToast(`Scores saved for ${writtenCount} student(s) in ${subject}!`);
   } catch(e) {
     showToast('Error saving bulk results.','error');
     console.error(e);
