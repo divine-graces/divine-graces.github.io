@@ -2018,9 +2018,13 @@ async function saveBulkResults() {
       const ref   = db.collection('results').doc(docId);
 
       // Merge into existing doc so we don't wipe traits/remarks/attendance
+      // Always include className so Firestore rules can verify teacher access
       batch.set(ref, {
-        studentId: s.id, className: cls, term, session,
-        [`scores.${subject}`]: { ca1, ca2, exam, total },
+        studentId: s.id,
+        className: cls,
+        term,
+        session,
+        scores: { [subject]: { ca1, ca2, exam, total } },
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
     });
