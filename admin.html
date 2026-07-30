@@ -2082,28 +2082,42 @@ async function saveBulkResults() {
 
 // Recompute overall positions, averages, and subject stats after any save
 async function recomputeClassStats(cls, term, session) {
+  const examOnly = isNurseryExamOnly(cls);
   const snap = await db.collection('results')
     .where('className','==',cls).where('term','==',term).where('session','==',session).get();
   const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   const subjects = await getSubjectsForClass(cls);
 
-  // Recompute each student's overall average from all their scores
+  // Helper: get correct total for a subject score based on class type
+  function getSubjTotal(sc) {
+    const exam = Number(sc.exam||0);
+    const ca1  = Number(sc.ca1||0);
+    const ca2  = Number(sc.ca2||0);
+    return examOnly ? Math.min(100, exam) : computeTotal(ca1, ca2, exam);
+  }
+
+  // Step 1: Recompute each student's overall average from raw scores
   const upd1 = [];
   allDocs.forEach(r => {
     const enteredSubjects = Object.keys(r.scores||{});
     if (!enteredSubjects.length) return;
-    const totals  = enteredSubjects.map(s => {
-      const sc = r.scores[s] || {};
-      return computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
-    });
+    const totals  = enteredSubjects.map(s => getSubjTotal(r.scores[s]||{}));
     const average = Math.round(totals.reduce((a,b)=>a+b,0)/totals.length);
     const passFail = average >= 40 ? 'Pass' : 'Fail';
-    upd1.push({ ref: db.collection('results').doc(r.id), data: { average, passFail } });
+
+    // Also rebuild corrected scores object
+    const newScores = {};
+    enteredSubjects.forEach(s => {
+      const sc = r.scores[s]||{};
+      newScores[s] = { ...sc, total: getSubjTotal(sc) };
+    });
+
+    upd1.push({ ref: db.collection('results').doc(r.id), data: { scores: newScores, average, passFail } });
   });
   await commitInChunks(upd1);
 
-  // Re-fetch with updated averages
-  const snap2   = await db.collection('results')
+  // Step 2: Re-fetch with updated averages and scores
+  const snap2    = await db.collection('results')
     .where('className','==',cls).where('term','==',term).where('session','==',session).get();
   const allDocs2 = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
 
@@ -2111,37 +2125,53 @@ async function recomputeClassStats(cls, term, session) {
     ? Math.round(allDocs2.reduce((s,r)=>s+(r.average||0),0)/allDocs2.length) : 0;
   const sorted = [...allDocs2].sort((a,b)=>(b.average||0)-(a.average||0));
 
-  const upd2 = [];
+  // Step 3: Build all stat updates using nested objects (no dot notation)
+  // Group updates by document ID to avoid multiple writes per doc
+  const docUpdates = {}; // id → data object
   let pos = 1;
   sorted.forEach((r,i) => {
     if (i>0 && (r.average||0)<(sorted[i-1].average||0)) pos=i+1;
-    upd2.push({ ref: db.collection('results').doc(r.id), data: { overallPosition: pos, classAverage: classAvg } });
+    docUpdates[r.id] = docUpdates[r.id] || {};
+    docUpdates[r.id].overallPosition = pos;
+    docUpdates[r.id].classAverage    = classAvg;
   });
 
+  // Build per-subject stats
+  const subjectHighest   = {};
+  const subjectLowest    = {};
+  const subjectClassAvg  = {};
+  const subjectPositions = {}; // docId → { subj: pos }
+
   subjects.forEach(subj => {
+    const fk = fieldKey(subj);
     const subjectTotals = allDocs2
       .map(r => {
-        const sc = r.scores?.[subj] || r.scores?.[subj.trim()] || {};
-        const total = computeTotal(sc.ca1||0, sc.ca2||0, sc.exam||0);
+        const sc    = r.scores?.[subj] || r.scores?.[subj.trim()] || {};
+        const total = getSubjTotal(sc);
         return { id: r.id, total };
       })
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
     if (!subjectTotals.length) return;
-    const highest    = subjectTotals[0].total;
-    const lowest     = subjectTotals[subjectTotals.length-1].total;
-    const subjectAvg = Math.round(subjectTotals.reduce((s,x)=>s+x.total,0)/subjectTotals.length);
+
+    const highest = subjectTotals[0].total;
+    const lowest  = subjectTotals[subjectTotals.length-1].total;
+    const avg     = Math.round(subjectTotals.reduce((s,x)=>s+x.total,0)/subjectTotals.length);
     let sp = 1;
     subjectTotals.forEach((x,i) => {
       if (i>0 && x.total<subjectTotals[i-1].total) sp=i+1;
-      upd2.push({ ref: db.collection('results').doc(x.id), data: {
-        [`subjectHighest.${fieldKey(subj)}`]: highest,
-        [`subjectLowest.${fieldKey(subj)}`]:  lowest,
-        [`subjectClassAvg.${fieldKey(subj)}`]: subjectAvg,
-        [`subjectPositions.${fieldKey(subj)}`]: sp
-      }});
+      docUpdates[x.id] = docUpdates[x.id] || {};
+      // Build nested objects to avoid dot notation
+      docUpdates[x.id].subjectHighest  = { ...(docUpdates[x.id].subjectHighest||{}),  [fk]: highest };
+      docUpdates[x.id].subjectLowest   = { ...(docUpdates[x.id].subjectLowest||{}),   [fk]: lowest  };
+      docUpdates[x.id].subjectClassAvg = { ...(docUpdates[x.id].subjectClassAvg||{}), [fk]: avg     };
+      docUpdates[x.id].subjectPositions= { ...(docUpdates[x.id].subjectPositions||{}), [fk]: sp     };
     });
   });
+
+  const upd2 = Object.entries(docUpdates).map(([id, data]) => ({
+    ref: db.collection('results').doc(id), data
+  }));
   await commitInChunks(upd2);
 }
 
