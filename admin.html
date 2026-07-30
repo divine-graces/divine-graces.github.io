@@ -2513,31 +2513,31 @@ async function recomputeNurseryTotals() {
 
       const updates = [];
       snap.docs.forEach(doc => {
-        const data = doc.data();
+        const data   = doc.data();
         const scores = data.scores || {};
-        const subjectUpdates = {};
+        const newScores = {};
         let changed = false;
 
         Object.keys(scores).forEach(subj => {
-          const sc    = scores[subj] || {};
-          const exam  = Number(sc.exam || 0);
+          const sc           = scores[subj] || {};
+          const exam         = Number(sc.exam || 0);
           const correctTotal = Math.min(100, exam);
-          if (sc.total !== correctTotal) {
-            subjectUpdates[`scores.${subj}.total`] = correctTotal;
-            changed = true;
-          }
+          // Copy all existing fields, just fix the total
+          newScores[subj] = { ...sc, total: correctTotal };
+          if (sc.total !== correctTotal) changed = true;
         });
 
-        // Also fix the overall average — recalculate from corrected totals
         if (changed) {
-          const subjectKeys = Object.keys(scores);
+          const subjectKeys     = Object.keys(scores);
           const correctedTotals = subjectKeys.map(s => Math.min(100, Number(scores[s]?.exam || 0)));
-          const newAverage = correctedTotals.length
+          const newAverage      = correctedTotals.length
             ? Math.round(correctedTotals.reduce((a,b)=>a+b,0) / correctedTotals.length)
             : 0;
-          subjectUpdates['average'] = newAverage;
-          subjectUpdates['passFail'] = newAverage >= 40 ? 'Pass' : 'Fail';
-          updates.push({ ref: db.collection('results').doc(doc.id), data: subjectUpdates });
+          updates.push({ ref: db.collection('results').doc(doc.id), data: {
+            scores:   newScores,
+            average:  newAverage,
+            passFail: newAverage >= 40 ? 'Pass' : 'Fail'
+          }});
           totalFixed++;
         }
       });
