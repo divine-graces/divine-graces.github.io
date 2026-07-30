@@ -550,6 +550,34 @@
         <h3>No results found</h3>
         <p>No results exist for that class, session and term combination.</p>
       </div>
+
+      <!-- ── Nursery Total Recompute Tool ── -->
+      <div class="card" style="margin-top:24px;border-left:4px solid var(--primary);">
+        <div class="card-header"><h3>🔧 Fix Nursery/Pre-Nursery Totals</h3></div>
+        <div class="card-body">
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;">
+            Use this to fix results saved before the exam-only update. It recalculates
+            the total for all Nursery and Pre-Nursery results using only the exam score
+            (out of 100). Raw exam scores are preserved — only the total field is corrected.
+          </p>
+          <div class="two-col">
+            <div class="form-group">
+              <label class="form-label">Session</label>
+              <input type="text" class="form-control" id="fixSession" placeholder="e.g. 2025/2026"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Term</label>
+              <select class="form-control" id="fixTerm">
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="recomputeNurseryTotals()">
+            <svg class="icon-svg" aria-hidden="true"><use href="#ic-check"/></svg> Fix Nursery Totals
+          </button>
+          <div id="fixStatus" style="margin-top:12px;font-size:.88rem;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ══ SCHEME ══ -->
@@ -2453,6 +2481,82 @@ async function executeTermFix() {
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<svg class="icon-svg" aria-hidden="true"><use href="#ic-check"/></svg> Confirm & Move Results';
+  }
+}
+
+async function recomputeNurseryTotals() {
+  const rawSession = document.getElementById('fixSession').value.trim();
+  const session    = normaliseSession(rawSession) || rawSession;
+  const term       = document.getElementById('fixTerm').value;
+  const statusEl   = document.getElementById('fixStatus');
+
+  if (!session) { showToast('Enter the session first.', 'error'); return; }
+  document.getElementById('fixSession').value = session;
+
+  const nurseryClasses = ['Pre Nursery', 'Nursery 1', 'Nursery 2', 'Nursery 3'];
+  statusEl.textContent = 'Fetching results...';
+  statusEl.style.color = 'var(--text-muted)';
+
+  let totalFixed = 0;
+  let totalDocs  = 0;
+
+  try {
+    for (const cls of nurseryClasses) {
+      const snap = await db.collection('results')
+        .where('className', '==', cls)
+        .where('session',   '==', session)
+        .where('term',      '==', term)
+        .get();
+
+      if (snap.empty) continue;
+      totalDocs += snap.docs.length;
+
+      const updates = [];
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        const scores = data.scores || {};
+        const subjectUpdates = {};
+        let changed = false;
+
+        Object.keys(scores).forEach(subj => {
+          const sc    = scores[subj] || {};
+          const exam  = Number(sc.exam || 0);
+          const correctTotal = Math.min(100, exam);
+          if (sc.total !== correctTotal) {
+            subjectUpdates[`scores.${subj}.total`] = correctTotal;
+            changed = true;
+          }
+        });
+
+        // Also fix the overall average — recalculate from corrected totals
+        if (changed) {
+          const subjectKeys = Object.keys(scores);
+          const correctedTotals = subjectKeys.map(s => Math.min(100, Number(scores[s]?.exam || 0)));
+          const newAverage = correctedTotals.length
+            ? Math.round(correctedTotals.reduce((a,b)=>a+b,0) / correctedTotals.length)
+            : 0;
+          subjectUpdates['average'] = newAverage;
+          subjectUpdates['passFail'] = newAverage >= 40 ? 'Pass' : 'Fail';
+          updates.push({ ref: db.collection('results').doc(doc.id), data: subjectUpdates });
+          totalFixed++;
+        }
+      });
+
+      await commitInChunks(updates);
+
+      // Recompute positions for this class now that averages are correct
+      if (updates.length > 0) {
+        await recomputeClassStats(cls, term, session);
+      }
+    }
+
+    statusEl.style.color = 'var(--success, #1a6b3c)';
+    statusEl.textContent = `✓ Done. Fixed ${totalFixed} of ${totalDocs} result documents across Nursery classes.`;
+    showToast(`Nursery totals fixed for ${totalFixed} students.`);
+  } catch(e) {
+    statusEl.style.color = 'var(--danger, #c0392b)';
+    statusEl.textContent = 'Error: ' + e.message;
+    console.error(e);
   }
 }
 
