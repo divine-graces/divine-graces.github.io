@@ -1369,6 +1369,11 @@ async function saveLowerResult() {
 
   if (!session) return showToast('Enter the session.','error');
 
+  // Auto-distribute before reading values — handles pre-filled scores
+  if (isNurseryOrLowerPrimary(className)) {
+    subjects.forEach(s => lsAutoDistribute(sanitize(s)));
+  }
+
   const scores = {};
   subjects.forEach(s => {
     const ca1El  = document.getElementById(`ls_ca1_${sanitize(s)}`);
@@ -2066,6 +2071,11 @@ async function saveBulkResults() {
 
     // Step 2: write updated scores for each student
     const batch = db.batch();
+    // Auto-distribute for Nursery classes before reading values
+    if (isNurseryOrLowerPrimary(cls)) {
+      students.forEach(s => bulkAutoDistribute(s.id, cls));
+    }
+
     let skippedCount = 0;
     let writtenCount  = 0;
     students.forEach(s => {
