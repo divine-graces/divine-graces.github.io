@@ -317,13 +317,9 @@
     const subRows = subjects.map(s => {
       const sc  = scores[s] || {};
       const ca1 = Number(sc.ca1||0), ca2 = Number(sc.ca2||0), exam = Number(sc.exam||0);
-      const _eo1 = isNurseryExamOnly(r.className);
-      const total = _eo1 ? Math.min(100, exam) : computeTotal(ca1, ca2, exam);
+      const total = computeTotal(ca1, ca2, exam);
       const {grade,comment} = getGrade(total, r.className);
-      const _sc1 = _eo1
-        ? '<td colspan="3" style="text-align:center;">'+exam+'/100</td>'
-        : '<td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td>';
-      return '<tr><td>'+s+'</td>'+_sc1+'<td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[fieldKey(s)]||'—')+'</td><td>'+(r.subjectLowest?.[fieldKey(s)]||'—')+'</td><td>'+(r.subjectPositions?.[fieldKey(s)]?'#'+r.subjectPositions[fieldKey(s)]:'—')+'</td><td><span class="badge badge-'+(grade||'F')+'">'+( grade||'F')+'</span></td><td style="color:var(--text-muted);font-size:.82rem;">'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td>'+ca1+'/20</td><td>'+ca2+'/20</td><td>'+exam+'/60</td><td><strong>'+total+'</strong>/100</td><td>'+(r.subjectHighest?.[fieldKey(s)]||'—')+'</td><td>'+(r.subjectLowest?.[fieldKey(s)]||'—')+'</td><td>'+(r.subjectPositions?.[fieldKey(s)]?'#'+r.subjectPositions[fieldKey(s)]:'—')+'</td><td><span class="badge badge-'+(grade||'F')+'">'+( grade||'F')+'</span></td><td style="color:var(--text-muted);font-size:.82rem;">'+comment+'</td></tr>';
     }).join('');
 
     const traitHTML = traits.map(t => {
@@ -348,13 +344,7 @@
         '<div class="info-item"><div class="info-item__label">Next Term Resumption</div><div class="info-item__value">'+(r.resumptionDate||'—')+'</div></div>'+
         '<div class="info-item"><div class="info-item__label">Status</div><div class="info-item__value" style="font-weight:700;color:'+(r.passFail==='Pass'?'var(--primary)':'var(--danger)')+'">'+(r.passFail||'—')+'</div></div>'+
       '</div>'+
-      (function(){
-        const _eo = isNurseryExamOnly(r.className);
-        const _hdr = _eo
-          ? '<th>Subject</th><th colspan="3" style="text-align:center;">Exam/100</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th>'
-          : '<th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th>';
-        return '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Subject Performance</h3></div><div class="table-wrapper"><table><thead><tr>'+_hdr+'</tr></thead><tbody>'+subRows+'</tbody></table></div></div>';
-      })()+
+      '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Subject Performance</h3></div><div class="table-wrapper"><table><thead><tr><th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th></tr></thead><tbody>'+subRows+'</tbody></table></div></div>'+
       '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Character Assessment</h3></div><div class="card-body"><div class="trait-grid">'+traitHTML+'</div></div></div>'+
       '<div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>Extra-Curricular Activities</h3></div>'+acts+'</div>'+
       '<div class="card"><div class="card-header"><h3>Remarks</h3></div><div class="card-body"><div class="remarks-box"><p><strong>Class Teacher ('+(r.teacherName||'—')+'):</strong> '+(r.teacherRemark||'—')+'</p><p style="margin-top:10px;"><strong>Head Teacher ('+(r.headTeacherName||'—')+'):</strong> '+(r.headTeacherRemark||'—')+'</p></div><div class="action-row no-print" style="margin-top:16px;"><button class="btn btn-primary" onclick="window.print()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-print"/></svg> Print Result</button></div></div></div>';
@@ -431,13 +421,7 @@
         '<div class="pb-sc"><span class="v" style="color:'+pColor+'">'+(r.passFail||'—')+'</span><span class="l">Status</span></div>'+
       '</div>'+
       '<div class="pb-sec">Subject Performance</div>'+
-      (function(){
-        const _peo2 = isNurseryExamOnly(r.className);
-        const _ph = _peo2
-          ? '<th>Subject</th><th colspan="3" style="text-align:center;">Exam/100</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th>'
-          : '<th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th>';
-        return '<table class="pb-tbl"><thead><tr>'+_ph+'</tr></thead><tbody>'+subRows+'</tbody></table>';
-      })()+
+      '<table class="pb-tbl"><thead><tr><th>Subject</th><th>CA1/20</th><th>CA2/20</th><th>Exam/60</th><th>Total/100</th><th>Highest</th><th>Lowest</th><th>Position</th><th>Grade</th><th>Comment</th></tr></thead><tbody>'+subRows+'</tbody></table>'+
       '<div class="pb-sec">Character Assessment</div>'+
       '<div class="pb-traits">'+traitCells+'</div>'+
       (actRows ? '<div class="pb-sec">Extra-Curricular Activities</div><div class="pb-meta-info">'+actRows+'</div>' : '')+
@@ -453,13 +437,9 @@
     const subRows = subjects.map(s => {
       const sc = scores[s]||{};
       const ca1=Number(sc.ca1||0), ca2=Number(sc.ca2||0), exam=Number(sc.exam||0);
-      const _peo = isNurseryExamOnly(r.className);
-      const total = _peo ? Math.min(100, exam) : computeTotal(ca1,ca2,exam);
+      const total = computeTotal(ca1,ca2,exam);
       const {grade,comment} = getGrade(total, r.className);
-      const _pScoreCols = _peo
-        ? '<td colspan="3" style="text-align:center;">'+exam+'/100</td>'
-        : '<td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td>';
-      return '<tr><td>'+s+'</td>'+_pScoreCols+'<td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[fieldKey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[fieldKey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[fieldKey(s)]?'#'+r.subjectPositions[fieldKey(s)]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
+      return '<tr><td>'+s+'</td><td style="text-align:center;">'+ca1+'</td><td style="text-align:center;">'+ca2+'</td><td style="text-align:center;">'+exam+'</td><td style="text-align:center;font-weight:bold;">'+total+'</td><td style="text-align:center;">'+(r.subjectHighest?.[fieldKey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectLowest?.[fieldKey(s)]||'—')+'</td><td style="text-align:center;">'+(r.subjectPositions?.[fieldKey(s)]?'#'+r.subjectPositions[fieldKey(s)]:'—')+'</td><td style="text-align:center;">'+pGrade(grade)+'</td><td>'+comment+'</td></tr>';
     }).join('');
 
     const pColor = r.passFail==='Pass' ? '#1a5c35' : '#721c24';
@@ -534,14 +514,6 @@
     }
 
     return html;
-  }
-
-  function isNurseryExamOnly(className) {
-    if (!className) return false;
-    return className === 'Pre Nursery' ||
-           className === 'Nursery 1'   ||
-           className === 'Nursery 2'   ||
-           className === 'Nursery 3';
   }
 
   function fieldKey(str) {

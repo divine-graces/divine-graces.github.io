@@ -1219,18 +1219,16 @@ async function openLowerResultModal(studentId, className, studentName) {
   const subjects = await getSubjectsForClass(className);
 
   // Subject scores — same CA1/CA2/Exam structure as upper school
-  const _examOnly = isNurseryExamOnly(className);
   document.getElementById('lowerScoreTitle').innerHTML =
-    `<svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subject Scores ${_examOnly ? '(Exam/100)' : '(CA1/20 + CA2/20 + Exam/60)'}`;
+    `<svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg> Subject Scores (CA1/20 + CA2/20 + Exam/60)`;
 
   document.getElementById('lowerScoresGrid').innerHTML = subjects.map(subj => `
     <div class="subject-score-section">
       <h4>${subj}</h4>
-      <div class="${_examOnly ? 'one-col' : 'three-col'}">
-        ${_examOnly ? '' : `
+      <div class="three-col">
         <div class="score-card"><label>CA 1 (max 20)</label><input type="number" min="0" max="20" id="ls_ca1_${sanitize(subj)}" placeholder="0–20"/></div>
-        <div class="score-card"><label>CA 2 (max 20)</label><input type="number" min="0" max="20" id="ls_ca2_${sanitize(subj)}" placeholder="0–20"/></div>`}
-        <div class="score-card"><label>Exam (max ${_examOnly ? '100' : '60'})</label><input type="number" min="0" max="${_examOnly ? '100' : '60'}" id="ls_exam_${sanitize(subj)}" placeholder="0–${_examOnly ? '100' : '60'}"/></div>
+        <div class="score-card"><label>CA 2 (max 20)</label><input type="number" min="0" max="20" id="ls_ca2_${sanitize(subj)}" placeholder="0–20"/></div>
+        <div class="score-card"><label>Exam (max 60)</label><input type="number" min="0" max="60" id="ls_exam_${sanitize(subj)}" placeholder="0–60"/></div>
       </div>
     </div>
   `).join('');
@@ -1339,8 +1337,7 @@ async function saveLowerResult() {
     const ca1  = Number(ca1El?.value||0);
     const ca2  = Number(ca2El?.value||0);
     const exam = Number(examEl?.value||0);
-    const total = isNurseryExamOnly(className) ? Math.min(100, exam) : computeTotal(ca1, ca2, exam);
-    scores[s]  = { ca1, ca2, exam, total };
+    scores[s]  = { ca1, ca2, exam, total: computeTotal(ca1, ca2, exam) };
   });
 
   const enteredSubjects = Object.keys(scores);
@@ -1938,17 +1935,6 @@ async function loadBulkGrid() {
   } catch(e) { console.warn('Could not pre-fetch results:', e); }
 
   // Exam-only detection for this class
-  const _bulkExamOnly = isNurseryExamOnly(cls);
-
-  // Show/hide CA columns in header and update exam header label
-  document.querySelectorAll('.bulk-ca-col').forEach(el => {
-    el.style.display = _bulkExamOnly ? 'none' : '';
-  });
-  const examTh = document.querySelector('#bulkGrid thead tr th:nth-child(4)');
-  if (examTh) examTh.innerHTML = _bulkExamOnly
-    ? `Exam <span style="opacity:.75;font-weight:400;">/100</span>`
-    : `Exam <span style="opacity:.75;font-weight:400;">/60</span>`;
-
   // Build table rows
   const tbody = document.getElementById('bulkGridBody');
   tbody.innerHTML = students.map((s, idx) => {
@@ -1956,28 +1942,25 @@ async function loadBulkGrid() {
     const ca1  = existing.ca1  ?? '';
     const ca2  = existing.ca2  ?? '';
     const exam = existing.exam ?? '';
-    const total = exam !== ''
-      ? (_bulkExamOnly ? Math.min(100, Number(exam)) : computeTotal(Number(ca1||0),Number(ca2||0),Number(exam||0)))
-      : '—';
+    const total = (ca1!==''||ca2!==''||exam!=='') ? computeTotal(Number(ca1||0),Number(ca2||0),Number(exam||0)) : '—';
     const rowBg = idx % 2 === 0 ? '' : 'style="background:var(--bg);"';
-    const caDisplay = _bulkExamOnly ? 'display:none;' : '';
     return `
       <tr ${rowBg} id="bulk-row-${s.id}">
         <td style="padding:10px 14px;font-weight:500;font-size:.88rem;">
           ${s.fullName}
           <div style="font-size:.74rem;color:var(--text-muted);">${s.id}</div>
         </td>
-        <td class="bulk-ca-col" style="padding:6px 8px;text-align:center;${caDisplay}">
+        <td class="bulk-ca-col" style="padding:6px 8px;text-align:center;">
           <input type="number" min="0" max="20" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
             id="bulk_ca1_${s.id}" value="${ca1}" placeholder="0–20" oninput="updateBulkTotal('${s.id}')"/>
         </td>
-        <td class="bulk-ca-col" style="padding:6px 8px;text-align:center;${caDisplay}">
+        <td class="bulk-ca-col" style="padding:6px 8px;text-align:center;">
           <input type="number" min="0" max="20" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
             id="bulk_ca2_${s.id}" value="${ca2}" placeholder="0–20" oninput="updateBulkTotal('${s.id}')"/>
         </td>
         <td style="padding:6px 8px;text-align:center;">
-          <input type="number" min="0" max="${_bulkExamOnly?'100':'60'}" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
-            id="bulk_exam_${s.id}" value="${exam}" placeholder="0–${_bulkExamOnly?'100':'60'}" oninput="updateBulkTotal('${s.id}')"/>
+          <input type="number" min="0" max="60" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
+            id="bulk_exam_${s.id}" value="${exam}" placeholder="0–60" oninput="updateBulkTotal('${s.id}')"/>
         </td>
         <td style="padding:10px 14px;text-align:center;font-weight:700;color:var(--primary);" id="bulk_total_${s.id}">${total}</td>
       </tr>`;
@@ -1988,13 +1971,11 @@ async function loadBulkGrid() {
 }
 
 function updateBulkTotal(studentId) {
-  const ca1    = Number(document.getElementById(`bulk_ca1_${studentId}`)?.value||0);
-  const ca2    = Number(document.getElementById(`bulk_ca2_${studentId}`)?.value||0);
-  const exam   = Number(document.getElementById(`bulk_exam_${studentId}`)?.value||0);
-  const cls    = (currentRole === 'teacher') ? currentClassName : document.getElementById('bulkClass').value;
-  const total  = isNurseryExamOnly(cls) ? Math.min(100, exam) : computeTotal(ca1, ca2, exam);
+  const ca1  = Number(document.getElementById(`bulk_ca1_${studentId}`)?.value||0);
+  const ca2  = Number(document.getElementById(`bulk_ca2_${studentId}`)?.value||0);
+  const exam = Number(document.getElementById(`bulk_exam_${studentId}`)?.value||0);
   const totalEl = document.getElementById(`bulk_total_${studentId}`);
-  if (totalEl) totalEl.textContent = total;
+  if (totalEl) totalEl.textContent = computeTotal(ca1, ca2, exam);
 }
 
 async function saveBulkResults() {
@@ -2038,8 +2019,7 @@ async function saveBulkResults() {
       const ca1  = Number(ca1El?.value||0);
       const ca2  = Number(ca2El?.value||0);
       const exam = Number(examEl.value||0);
-      const _bulkEO = isNurseryExamOnly(cls);
-      const total = _bulkEO ? Math.min(100, exam) : computeTotal(ca1, ca2, exam);
+      const total = computeTotal(ca1, ca2, exam);
       writtenCount++;
 
       const docId = `${s.id}_${cls}_${session}_${term}`.replace(/[\s/]/g,'_');
@@ -2082,18 +2062,14 @@ async function saveBulkResults() {
 
 // Recompute overall positions, averages, and subject stats after any save
 async function recomputeClassStats(cls, term, session) {
-  const examOnly = isNurseryExamOnly(cls);
   const snap = await db.collection('results')
     .where('className','==',cls).where('term','==',term).where('session','==',session).get();
   const allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   const subjects = await getSubjectsForClass(cls);
 
-  // Helper: get correct total for a subject score based on class type
+  // Helper: get correct total for a subject score
   function getSubjTotal(sc) {
-    const exam = Number(sc.exam||0);
-    const ca1  = Number(sc.ca1||0);
-    const ca2  = Number(sc.ca2||0);
-    return examOnly ? Math.min(100, exam) : computeTotal(ca1, ca2, exam);
+    return computeTotal(Number(sc.ca1||0), Number(sc.ca2||0), Number(sc.exam||0));
   }
 
   // Step 1: Recompute each student's overall average from raw scores

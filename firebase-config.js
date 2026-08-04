@@ -5,12 +5,12 @@
 // ============================================================
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAl8mlQ2xLuDq_4_-tuc4Ue8rL8F2JkmzM",
-  authDomain: "dgss-6134a.firebaseapp.com",
-  projectId: "dgss-6134a",
-  storageBucket: "dgss-6134a.firebasestorage.app",
-  messagingSenderId: "952213777221",
-  appId: "1:952213777221:web:3cd748fb84c3b2e47cec2c"
+  apiKey: "AIzaSyCJQhewNr4GW3gOKCqcac9Lrr_mOJmgmAE",
+  authDomain: "divine-grace-school-ba415.firebaseapp.com",
+  projectId: "divine-grace-school-ba415",
+  storageBucket: "divine-grace-school-ba415.firebasestorage.app",
+  messagingSenderId: "715765687350",
+  appId: "1:715765687350:web:9afff5c2e4a654cd92e497"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -61,14 +61,6 @@ async function getSubjectsForClass(className) {
 // next call re-fetches from Firestore.
 function invalidateSubjectsCache(className) {
   delete _subjectsCache[className];
-}
-
-function isNurseryExamOnly(className) {
-  if (!className) return false;
-  return className === 'Pre Nursery' ||
-         className === 'Nursery 1'   ||
-         className === 'Nursery 2'   ||
-         className === 'Nursery 3';
 }
 
 function isNurseryOrLowerPrimary(className) {
