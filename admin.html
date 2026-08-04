@@ -1212,6 +1212,48 @@ function openResultModal(studentId, className, studentName) {
   else openUpperResultModal(studentId, className, studentName);
 }
 
+// ══ LOWER SCORE AUTO-DISTRIBUTION ══
+// Only for Nursery classes — when exam > 60 and CA fields are 0/empty,
+// auto-distribute: CA1=20, CA2=20, Exam=total-40 (capped at 60)
+function lsAutoDistribute(subjKey) {
+  const examEl = document.getElementById(`ls_exam_${subjKey}`);
+  const ca1El  = document.getElementById(`ls_ca1_${subjKey}`);
+  const ca2El  = document.getElementById(`ls_ca2_${subjKey}`);
+  if (!examEl) return;
+
+  const exam   = Number(examEl.value || 0);
+  const ca1    = Number(ca1El?.value || 0);
+  const ca2    = Number(ca2El?.value || 0);
+
+  // Only auto-distribute if CA fields are untouched (both 0 or empty)
+  // AND exam value is greater than 60
+  if (ca1 === 0 && ca2 === 0 && exam >= 60) {
+    const total      = Math.min(100, exam); // cap at 100
+    const examShare  = Math.min(60, total - 40); // remainder after CA1+CA2
+    const ca1Share   = 20;
+    const ca2Share   = 20;
+
+    if (ca1El) { ca1El.value = ca1Share; }
+    if (ca2El) { ca2El.value = ca2Share; }
+    // Clamp exam field to its correct share
+    examEl.value = Math.max(0, examShare);
+  }
+
+  lsUpdateTotal(subjKey);
+}
+
+function lsUpdateTotal(subjKey) {
+  const ca1El  = document.getElementById(`ls_ca1_${subjKey}`);
+  const ca2El  = document.getElementById(`ls_ca2_${subjKey}`);
+  const examEl = document.getElementById(`ls_exam_${subjKey}`);
+  if (!examEl) return;
+  const ca1  = Math.min(20, Number(ca1El?.value  || 0));
+  const ca2  = Math.min(20, Number(ca2El?.value  || 0));
+  const exam = Math.min(60, Number(examEl.value   || 0));
+  const totalEl = document.getElementById(`ls_total_${subjKey}`);
+  if (totalEl) totalEl.textContent = ca1 + ca2 + exam;
+}
+
 // ══ LOWER RESULT MODAL ══
 async function openLowerResultModal(studentId, className, studentName) {
   document.getElementById('lowerResultTitle').textContent = `${studentName} — ${className} Result`;
@@ -1226,9 +1268,9 @@ async function openLowerResultModal(studentId, className, studentName) {
     <div class="subject-score-section">
       <h4>${subj}</h4>
       <div class="three-col">
-        <div class="score-card"><label>CA 1 (max 20)</label><input type="number" min="0" max="20" id="ls_ca1_${sanitize(subj)}" placeholder="0–20"/></div>
-        <div class="score-card"><label>CA 2 (max 20)</label><input type="number" min="0" max="20" id="ls_ca2_${sanitize(subj)}" placeholder="0–20"/></div>
-        <div class="score-card"><label>Exam (max 60)</label><input type="number" min="0" max="60" id="ls_exam_${sanitize(subj)}" placeholder="0–60"/></div>
+        <div class="score-card"><label>CA 1 (max 20)</label><input type="number" min="0" max="20" id="ls_ca1_${sanitize(subj)}" placeholder="0–20" oninput="lsUpdateTotal('${sanitize(subj)}')"/></div>
+        <div class="score-card"><label>CA 2 (max 20)</label><input type="number" min="0" max="20" id="ls_ca2_${sanitize(subj)}" placeholder="0–20" oninput="lsUpdateTotal('${sanitize(subj)}')"/></div>
+        <div class="score-card"><label>Exam (max 60)</label><input type="number" min="0" max="60" id="ls_exam_${sanitize(subj)}" placeholder="0–60" oninput="lsAutoDistribute('${sanitize(subj)}')"/></div>
       </div>
     </div>
   `).join('');
@@ -1960,7 +2002,7 @@ async function loadBulkGrid() {
         </td>
         <td style="padding:6px 8px;text-align:center;">
           <input type="number" min="0" max="60" class="form-control" style="width:70px;margin:auto;text-align:center;padding:6px;"
-            id="bulk_exam_${s.id}" value="${exam}" placeholder="0–60" oninput="updateBulkTotal('${s.id}')"/>
+            id="bulk_exam_${s.id}" value="${exam}" placeholder="0–60" oninput="bulkAutoDistribute('${s.id}', '${cls}')"/>
         </td>
         <td style="padding:10px 14px;text-align:center;font-weight:700;color:var(--primary);" id="bulk_total_${s.id}">${total}</td>
       </tr>`;
@@ -1968,6 +2010,28 @@ async function loadBulkGrid() {
 
   card.style.display  = 'block';
   empty.style.display = 'none';
+}
+
+function bulkAutoDistribute(studentId, cls) {
+  const examEl = document.getElementById(`bulk_exam_${studentId}`);
+  const ca1El  = document.getElementById(`bulk_ca1_${studentId}`);
+  const ca2El  = document.getElementById(`bulk_ca2_${studentId}`);
+  if (!examEl) return;
+
+  const exam = Number(examEl.value || 0);
+  const ca1  = Number(ca1El?.value || 0);
+  const ca2  = Number(ca2El?.value || 0);
+
+  // Only for Nursery classes when CA fields untouched and exam > 60
+  if (isNurseryOrLowerPrimary(cls) && ca1 === 0 && ca2 === 0 && exam >= 60) {
+    const total     = Math.min(100, exam);
+    const examShare = Math.min(60, total - 40);
+    if (ca1El) ca1El.value = 20;
+    if (ca2El) ca2El.value = 20;
+    examEl.value = Math.max(0, examShare);
+  }
+
+  updateBulkTotal(studentId);
 }
 
 function updateBulkTotal(studentId) {
