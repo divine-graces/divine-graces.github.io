@@ -79,8 +79,8 @@
     #noteEditor.drag-over{border-color:var(--primary);background:#f0f7ff}
 
     /* Admin mobile nav */
-    .admin-mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--primary);border-top:1px solid rgba(255,255,255,.15);padding:6px 0;z-index:200;box-shadow:0 -2px 10px rgba(0,0,0,.2)}
-    .admin-mobile-nav a{flex:1;display:flex;flex-direction:column;align-items:center;font-size:.65rem;color:rgba(255,255,255,.7);text-decoration:none;padding:5px 0;cursor:pointer}
+    .admin-mobile-nav{overflow-x:auto;scrollbar-width:none;display:none;position:fixed;bottom:0;left:0;right:0;background:var(--primary);border-top:1px solid rgba(255,255,255,.15);padding:6px 0;z-index:200;box-shadow:0 -2px 10px rgba(0,0,0,.2)}
+    .admin-mobile-nav a{flex:1 0 62px;display:flex;flex-direction:column;align-items:center;font-size:.65rem;color:rgba(255,255,255,.7);text-decoration:none;padding:5px 0;cursor:pointer}
     .admin-mobile-nav a .icon{font-size:1.2rem;margin-bottom:1px}
     .admin-mobile-nav a.active{color:#fff}
     @media(max-width:900px){.notes-layout{grid-template-columns:1fr}.notes-panel{position:static}.notes-list{max-height:240px}.editor-fields{grid-template-columns:1fr 1fr}}
@@ -96,6 +96,7 @@
   <symbol id="ic-book-open" viewBox="0 0 24 24"><path d="M2 3h7a4 4 0 014 4v14a3 3 0 00-3-3H2V3z"/><path d="M22 3h-7a4 4 0 00-4 4v14a3 3 0 013-3h8V3z"/></symbol>
   <symbol id="ic-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></symbol>
   <symbol id="ic-megaphone" viewBox="0 0 24 24"><path d="M18 8a4 4 0 010 8"/><path d="M21 5a7 7 0 010 14"/><path d="M3 9h4l7-5v16l-7-5H3a1 1 0 01-1-1v-4a1 1 0 011-1z"/><line x1="7" y1="9" x2="7" y2="15"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
   <symbol id="ic-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
   <symbol id="ic-notes" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
   <symbol id="ic-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></symbol>
@@ -123,11 +124,14 @@
       <div class="name">Admin Panel</div>
     </div>
     <nav>
-      <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg></span> Students</a>
-      <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span> Results</a>
-      <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span> Scheme of Work</a>
-      <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span> Announcements</a>
+      <a href="admin.html#students"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg></span> Students</a>
+      <a href="admin.html#results"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span> Results</a>
+      <a href="admin.html#subjects"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg></span> Subjects</a>
+      <a href="admin.html#scheme"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span> Scheme of Work</a>
+      <a href="admin.html#announcements"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span> Announcements</a>
       <a href="notes.html" class="active"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span> Lesson Notes</a>
+      <a href="admin.html#review"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span> Results Review</a>
+      <a href="admin.html#termfix" id="nav-termfix" style="display:none;border-left:3px solid #c8963e;"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg></span> Admin Tools</a>
     </nav>
     <div class="sidebar__footer">
       <button class="btn btn-danger btn-full btn-sm" onclick="adminLogout()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-logout"/></svg> Sign Out</button>
@@ -275,11 +279,14 @@ You can also paste or drag images directly into this area."></div>
 
 <!-- Mobile Nav -->
 <div class="admin-mobile-nav">
-  <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg></span>Students</a>
-  <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span>Results</a>
-  <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span>Scheme</a>
-  <a href="admin.html"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span>News</a>
+  <a href="admin.html#students"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-users"/></svg></span>Students</a>
+  <a href="admin.html#results"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span>Results</a>
+  <a href="admin.html#review"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-star"/></svg></span>Review</a>
+  <a href="admin.html#subjects"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book"/></svg></span>Subjects</a>
+  <a href="admin.html#scheme"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span>Scheme</a>
+  <a href="admin.html#announcements"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span>News</a>
   <a href="notes.html" class="active"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span>Notes</a>
+  <a href="admin.html#termfix" id="mnav-termfix" style="display:none"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg></span>Tools</a>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -309,6 +316,9 @@ You can also paste or drag images directly into this area."></div>
           const data = adminDoc.data();
           currentRole      = data.role || 'teacher';
           currentClassName = data.className || null;
+          if (currentRole === 'headteacher') {
+            ['nav-termfix','mnav-termfix'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; });
+          }
           if (currentRole === 'teacher' && !currentClassName) {
             auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html'; return;
           }

@@ -57,9 +57,10 @@
     .class-back:hover{text-decoration:underline}
 
     /* ══ ADMIN MOBILE ══ */
-    .admin-mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--primary);border-top:1px solid rgba(255,255,255,.15);padding:6px 0;z-index:200;box-shadow:0 -2px 10px rgba(0,0,0,.2)}
-    .admin-mobile-nav a{flex:1;display:flex;flex-direction:column;align-items:center;font-size:.65rem;color:rgba(255,255,255,.7);text-decoration:none;padding:5px 0;cursor:pointer;border:none;background:none;font-family:var(--font-b)}
+    .admin-mobile-nav{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:none;position:fixed;bottom:0;left:0;right:0;background:var(--primary);border-top:1px solid rgba(255,255,255,.15);padding:6px 0;z-index:200;box-shadow:0 -2px 10px rgba(0,0,0,.2)}
+    .admin-mobile-nav a{flex:1 0 62px;display:flex;flex-direction:column;align-items:center;font-size:.65rem;color:rgba(255,255,255,.7);text-decoration:none;padding:5px 0;cursor:pointer;border:none;background:none;font-family:var(--font-b)}
     .admin-mobile-nav a .icon{font-size:1.2rem;margin-bottom:1px}
+    .admin-mobile-nav::-webkit-scrollbar{display:none}
     .admin-mobile-nav a.active{color:#fff}
     .admin-mobile-nav a.active .icon{filter:drop-shadow(0 0 3px rgba(200,150,62,.8))}
     @media(max-width:768px){
@@ -145,7 +146,7 @@
       <a href="#" onclick="switchTab('announcements')" id="nav-ann"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span> Announcements</a>
       <a href="notes.html" id="nav-notes"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span> Lesson Notes</a>
       <a href="#" onclick="switchTab('review')" id="nav-review"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-chart"/></svg></span> Results Review</a>
-      <a href="#" onclick="switchTab('termfix')" id="nav-termfix" style="display:none;border-left:3px solid #c8963e;"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg></span> Term Correction</a>
+      <a href="#" onclick="switchTab('termfix')" id="nav-termfix" style="display:none;border-left:3px solid #c8963e;"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg></span> Admin Tools</a>
     </nav>
     <div class="sidebar__footer">
       <button class="btn btn-danger btn-full btn-sm" onclick="adminLogout()"><svg class="icon-svg" aria-hidden="true"><use href="#ic-logout"/></svg> Sign Out</button>
@@ -484,11 +485,60 @@
     <!-- ══ TERM CORRECTION ══ -->
     <div class="tab-panel" id="tab-termfix">
       <div class="page-title">
-        <h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg> Term Correction</h1>
-        <p>Move results that were saved under the wrong term to the correct one</p>
+        <h1><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg> Admin Tools</h1>
+        <p>Promote students between classes and correct results saved under the wrong term</p>
+      </div>
+
+      <!-- ── Promotions ── -->
+      <div class="card" style="margin-bottom:18px;border-left:4px solid var(--primary);">
+        <div class="card-header"><h3>Promote / Move Students</h3></div>
+        <div class="card-body">
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;">
+            Select students in a class and move them to any other class (up or down).
+            Their results, IDs and PINs stay exactly as they are &mdash; old results remain under the old class in their history.
+          </p>
+          <div class="two-col">
+            <div class="form-group">
+              <label class="form-label">Move FROM class</label>
+              <select class="form-control" id="promoFrom" onchange="renderPromoStudents()">
+                <option value="">— Select Class —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Move TO class</label>
+              <select class="form-control" id="promoTo" onchange="updatePromoSummary()">
+                <option value="">— Select Class —</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="promoListWrap" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:.88rem;font-weight:600;cursor:pointer;">
+                <input type="checkbox" id="promoSelectAll" onchange="togglePromoAll(this.checked)"/> Select all
+              </label>
+              <span id="promoCount" style="font-size:.85rem;color:var(--text-muted);"></span>
+            </div>
+            <div id="promoList" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;"></div>
+
+            <div id="promoSummary" style="display:none;margin-top:14px;background:#fff8ec;border:1px solid #f0c070;border-radius:8px;padding:12px 16px;font-size:.88rem;color:#7a5000;"></div>
+
+            <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-primary" id="promoReviewBtn" onclick="reviewPromotion()">Review Move</button>
+              <button class="btn btn-success" id="promoConfirmBtn" onclick="executePromotion()" style="display:none;">Confirm &amp; Move</button>
+              <button class="btn btn-outline" id="promoCancelBtn" onclick="cancelPromotion()" style="display:none;">Cancel</button>
+            </div>
+          </div>
+
+          <div style="margin-top:22px;">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);margin-bottom:8px;">Recent moves</div>
+            <div id="promoLogs" style="font-size:.88rem;color:var(--text-muted);">Loading…</div>
+          </div>
+        </div>
       </div>
 
       <div class="card" style="margin-bottom:18px;border-left:4px solid var(--accent);">
+        <div class="card-header"><h3>Term Correction</h3></div>
         <div class="card-body">
           <div style="background:#fff8ec;border:1px solid #f0c070;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:.88rem;color:#7a5000;">
             <strong>⚠ Important:</strong> This tool moves ALL results for a class from one term to another.
@@ -551,33 +601,6 @@
         <p>No results exist for that class, session and term combination.</p>
       </div>
 
-      <!-- ── Nursery Total Recompute Tool ── -->
-      <div class="card" style="margin-top:24px;border-left:4px solid var(--primary);">
-        <div class="card-header"><h3>🔧 Fix Nursery/Pre-Nursery Totals</h3></div>
-        <div class="card-body">
-          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;">
-            Use this to fix results saved before the exam-only update. It recalculates
-            the total for all Nursery and Pre-Nursery results using only the exam score
-            (out of 100). Raw exam scores are preserved — only the total field is corrected.
-          </p>
-          <div class="two-col">
-            <div class="form-group">
-              <label class="form-label">Session</label>
-              <input type="text" class="form-control" id="fixSession" placeholder="e.g. 2025/2026"/>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Term</label>
-              <select class="form-control" id="fixTerm">
-                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn btn-primary" onclick="recomputeNurseryTotals()">
-            <svg class="icon-svg" aria-hidden="true"><use href="#ic-check"/></svg> Fix Nursery Totals
-          </button>
-          <div id="fixStatus" style="margin-top:12px;font-size:.88rem;"></div>
-        </div>
-      </div>
     </div>
 
     <!-- ══ SCHEME ══ -->
@@ -847,6 +870,11 @@ async function init() {
 
         document.getElementById('adminEmailLabel').textContent = user.email;
         applyRoleBadge();
+        // Deep link from other pages, e.g. admin.html#review
+        const hashTab = location.hash.replace('#','');
+        if (hashTab && document.getElementById('tab-'+hashTab) && !(hashTab === 'termfix' && currentRole !== 'headteacher')) {
+          setTimeout(() => switchTab(hashTab), 0);
+        }
       } catch(e) {
         console.error('Role fetch error:', e);
         auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html';
@@ -889,6 +917,8 @@ function applyRoleBadge() {
   if (currentRole === 'headteacher') {
     const termFixNav = document.getElementById('nav-termfix');
     if (termFixNav) termFixNav.style.display = 'flex';
+    const termFixMnav = document.getElementById('mnav-termfix');
+    if (termFixMnav) termFixMnav.style.display = 'flex';
   }
 }
 
@@ -940,15 +970,17 @@ function switchTab(tab) {
   document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
   document.querySelectorAll('.admin-mobile-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
-  document.getElementById('nav-'+tab).classList.add('active');
-  const mn = document.getElementById('mnav-'+tab);
-  if (mn) mn.classList.add('active');
+  const navKey = tab === 'announcements' ? 'ann' : tab;
+  const dn = document.getElementById('nav-'+navKey);
+  if (dn) dn.classList.add('active');
+  const mn = document.getElementById('mnav-'+navKey);
+  if (mn) { mn.classList.add('active'); mn.scrollIntoView({inline:'center', block:'nearest'}); }
 
   // Always reset to term picker when switching to results tab
   if (tab === 'results') resetTermPicker();
 
   // Populate tfClass when switching to termfix
-  if (tab === 'termfix') populateTermFixClasses();
+  if (tab === 'termfix') { populateTermFixClasses(); initPromotions(); }
   // Init review tab
   if (tab === 'review') initReviewTab();
 
@@ -2564,79 +2596,188 @@ async function executeTermFix() {
   }
 }
 
-async function recomputeNurseryTotals() {
-  const rawSession = document.getElementById('fixSession').value.trim();
-  const session    = normaliseSession(rawSession) || rawSession;
-  const term       = document.getElementById('fixTerm').value;
-  const statusEl   = document.getElementById('fixStatus');
+// ══ PROMOTIONS ══
+let _promoReady = false;
 
-  if (!session) { showToast('Enter the session first.', 'error'); return; }
-  document.getElementById('fixSession').value = session;
-
-  const nurseryClasses = ['Pre Nursery', 'Nursery 1', 'Nursery 2', 'Nursery 3'];
-  statusEl.textContent = 'Fetching results...';
-  statusEl.style.color = 'var(--text-muted)';
-
-  let totalFixed = 0;
-  let totalDocs  = 0;
-
-  try {
-    for (const cls of nurseryClasses) {
-      const snap = await db.collection('results')
-        .where('className', '==', cls)
-        .where('session',   '==', session)
-        .where('term',      '==', term)
-        .get();
-
-      if (snap.empty) continue;
-      totalDocs += snap.docs.length;
-
-      const updates = [];
-      snap.docs.forEach(doc => {
-        const data   = doc.data();
-        const scores = data.scores || {};
-        const newScores = {};
-        let changed = false;
-
-        Object.keys(scores).forEach(subj => {
-          const sc           = scores[subj] || {};
-          const exam         = Number(sc.exam || 0);
-          const correctTotal = Math.min(100, exam);
-          // Copy all existing fields, just fix the total
-          newScores[subj] = { ...sc, total: correctTotal };
-          if (sc.total !== correctTotal) changed = true;
-        });
-
-        if (changed) {
-          const subjectKeys     = Object.keys(scores);
-          const correctedTotals = subjectKeys.map(s => Math.min(100, Number(scores[s]?.exam || 0)));
-          const newAverage      = correctedTotals.length
-            ? Math.round(correctedTotals.reduce((a,b)=>a+b,0) / correctedTotals.length)
-            : 0;
-          updates.push({ ref: db.collection('results').doc(doc.id), data: {
-            scores:   newScores,
-            average:  newAverage,
-            passFail: newAverage >= 40 ? 'Pass' : 'Fail'
-          }});
-          totalFixed++;
-        }
+function initPromotions() {
+  if (currentRole !== 'headteacher') return;
+  if (!_promoReady) {
+    ['promoFrom','promoTo'].forEach(id => {
+      const sel = document.getElementById(id);
+      CLASSES.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c; o.textContent = c; sel.appendChild(o);
       });
+    });
+    _promoReady = true;
+  }
+  loadPromoLogs();
+}
 
-      await commitInChunks(updates);
+function getPromoSelected() {
+  return [...document.querySelectorAll('#promoList input[type=checkbox]:checked')].map(cb => cb.value);
+}
 
-      // Recompute positions for this class now that averages are correct
-      if (updates.length > 0) {
-        await recomputeClassStats(cls, term, session);
-      }
+function renderPromoStudents() {
+  cancelPromotion();
+  const cls  = document.getElementById('promoFrom').value;
+  const wrap = document.getElementById('promoListWrap');
+  document.getElementById('promoSelectAll').checked = false;
+  if (!cls) { wrap.style.display = 'none'; return; }
+  const list = allStudents
+    .filter(s => s.currentClass === cls)
+    .sort((a,b) => (a.fullName||'').localeCompare(b.fullName||''));
+  const box = document.getElementById('promoList');
+  box.innerHTML = list.length ? list.map(s => `
+    <label style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;">
+      <input type="checkbox" value="${escapeHtml(s.id)}" onchange="updatePromoSummary()"/>
+      <span style="flex:1;font-weight:600;font-size:.9rem;">${escapeHtml(s.fullName||'')}</span>
+      <span style="font-size:.78rem;color:var(--text-muted);">${escapeHtml(s.id)}</span>
+    </label>`).join('')
+    : '<div style="padding:18px;text-align:center;color:var(--text-muted);">No students in this class.</div>';
+  wrap.style.display = 'block';
+  updatePromoSummary();
+}
+
+function togglePromoAll(checked) {
+  document.querySelectorAll('#promoList input[type=checkbox]').forEach(cb => cb.checked = checked);
+  updatePromoSummary();
+}
+
+function updatePromoSummary() {
+  const n = getPromoSelected().length;
+  const total = document.querySelectorAll('#promoList input[type=checkbox]').length;
+  document.getElementById('promoCount').textContent = `${n} of ${total} selected`;
+  document.getElementById('promoSelectAll').checked = total > 0 && n === total;
+  // any change after review resets the confirm step
+  document.getElementById('promoSummary').style.display = 'none';
+  document.getElementById('promoConfirmBtn').style.display = 'none';
+  document.getElementById('promoCancelBtn').style.display  = 'none';
+  document.getElementById('promoReviewBtn').style.display  = '';
+}
+
+function reviewPromotion() {
+  const from = document.getElementById('promoFrom').value;
+  const to   = document.getElementById('promoTo').value;
+  const ids  = getPromoSelected();
+  if (!from)        return showToast('Select the class to move from.', 'error');
+  if (!to)          return showToast('Select the class to move to.', 'error');
+  if (from === to)  return showToast('Choose a different destination class.', 'error');
+  if (!ids.length)  return showToast('Select at least one student.', 'error');
+  const names = ids.map(id => allStudents.find(s => s.id === id)?.fullName || id);
+  const sum = document.getElementById('promoSummary');
+  sum.innerHTML = `<strong>Move ${ids.length} student${ids.length!==1?'s':''} from ${escapeHtml(from)} to ${escapeHtml(to)}?</strong><br>
+    <span style="font-size:.82rem;">${names.slice(0,6).map(escapeHtml).join(', ')}${names.length>6?` and ${names.length-6} more`:''}</span><br>
+    <span style="font-size:.82rem;">Results and history are kept. You can undo this from Recent moves.</span>`;
+  sum.style.display = 'block';
+  document.getElementById('promoReviewBtn').style.display  = 'none';
+  document.getElementById('promoConfirmBtn').style.display = '';
+  document.getElementById('promoCancelBtn').style.display  = '';
+}
+
+function cancelPromotion() {
+  const sum = document.getElementById('promoSummary');
+  if (!sum) return;
+  sum.style.display = 'none';
+  document.getElementById('promoConfirmBtn').style.display = 'none';
+  document.getElementById('promoCancelBtn').style.display  = 'none';
+  document.getElementById('promoReviewBtn').style.display  = '';
+}
+
+async function executePromotion() {
+  const from = document.getElementById('promoFrom').value;
+  const to   = document.getElementById('promoTo').value;
+  const ids  = getPromoSelected();
+  if (!from || !to || from === to || !ids.length) return;
+
+  const btn = document.getElementById('promoConfirmBtn');
+  btn.disabled = true; btn.textContent = 'Moving…';
+  try {
+    const updates = ids.map(id => ({ ref: db.collection('students').doc(id), data: { currentClass: to } }));
+    await commitInChunks(updates);
+
+    // Update local state right away
+    allStudents.forEach(s => { if (ids.includes(s.id)) s.currentClass = to; });
+
+    // Save a log entry so the move can be undone
+    try {
+      await db.collection('promotion_logs').add({
+        fromClass: from,
+        toClass:   to,
+        studentIds: ids,
+        studentNames: ids.map(id => allStudents.find(s => s.id === id)?.fullName || id),
+        count: ids.length,
+        movedBy: (auth.currentUser && auth.currentUser.email) || '',
+        movedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        undone: false
+      });
+    } catch(logErr) {
+      console.error(logErr);
+      showToast('Students moved, but the undo log could not be saved.', 'error');
     }
 
-    statusEl.style.color = 'var(--success, #1a6b3c)';
-    statusEl.textContent = `✓ Done. Fixed ${totalFixed} of ${totalDocs} result documents across Nursery classes.`;
-    showToast(`Nursery totals fixed for ${totalFixed} students.`);
+    showToast(`${ids.length} student${ids.length!==1?'s':''} moved to ${to}.`);
+    renderClassGrid();
+    renderPromoStudents();
+    loadPromoLogs();
   } catch(e) {
-    statusEl.style.color = 'var(--danger, #c0392b)';
-    statusEl.textContent = 'Error: ' + e.message;
     console.error(e);
+    showToast('Move failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirm & Move';
+  }
+}
+
+let _promoLogs = [];
+
+async function loadPromoLogs() {
+  const el = document.getElementById('promoLogs');
+  if (!el) return;
+  try {
+    const snap = await db.collection('promotion_logs').orderBy('movedAt','desc').limit(10).get();
+    _promoLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!_promoLogs.length) { el.textContent = 'No moves yet.'; return; }
+    el.innerHTML = _promoLogs.map(l => {
+      const when = l.movedAt && l.movedAt.toDate
+        ? l.movedAt.toDate().toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+        : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <div style="color:var(--text);font-weight:600;">${l.count} student${l.count!==1?'s':''}: ${escapeHtml(l.fromClass)} → ${escapeHtml(l.toClass)}</div>
+          <div style="font-size:.78rem;">${escapeHtml(when)}${l.undone ? ' · <strong>undone</strong>' : ''}</div>
+        </div>
+        ${l.undone ? '' : `<button class="btn btn-outline btn-sm" onclick="undoPromotion('${l.id}')">Undo</button>`}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error(e);
+    el.textContent = 'Could not load recent moves.';
+  }
+}
+
+async function undoPromotion(logId) {
+  const log = _promoLogs.find(l => l.id === logId);
+  if (!log || log.undone) return;
+  if (!confirm(`Undo this move and send ${log.count} student(s) back to ${log.fromClass}?\n\nOnly students still in ${log.toClass} will be moved back.`)) return;
+  try {
+    // Fresh read: only revert students that are still in the class they were moved to
+    const snap = await db.collection('students').where('currentClass','==',log.toClass).get();
+    const idSet = new Set(log.studentIds);
+    const stillThere = snap.docs.map(d => d.id).filter(id => idSet.has(id));
+    await commitInChunks(stillThere.map(id => ({ ref: db.collection('students').doc(id), data: { currentClass: log.fromClass } })));
+    await db.collection('promotion_logs').doc(logId).update({
+      undone: true,
+      undoneAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    allStudents.forEach(s => { if (stillThere.includes(s.id)) s.currentClass = log.fromClass; });
+    const skipped = log.studentIds.length - stillThere.length;
+    showToast(`${stillThere.length} student(s) moved back to ${log.fromClass}.` + (skipped ? ` ${skipped} skipped (already moved elsewhere).` : ''));
+    renderClassGrid();
+    renderPromoStudents();
+    loadPromoLogs();
+  } catch(e) {
+    console.error(e);
+    showToast('Undo failed: ' + e.message, 'error');
   }
 }
 
@@ -2832,6 +2973,7 @@ init();
   <a onclick="switchTab('scheme')" id="mnav-scheme"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-book-open"/></svg></span>Scheme</a>
   <a onclick="switchTab('announcements')" id="mnav-ann"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-megaphone"/></svg></span>News</a>
   <a href="notes.html" id="mnav-notes"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-notes"/></svg></span>Notes</a>
+  <a onclick="switchTab('termfix')" id="mnav-termfix" style="display:none"><span class="icon"><svg class="icon-svg" aria-hidden="true"><use href="#ic-edit"/></svg></span>Tools</a>
 </div>
 </body>
 </html>
